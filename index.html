@@ -3,102 +3,185 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Casino Schedule — Stage 3a Probe</title>
+<title>Casino Schedule</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-:root { --bg: var(--tg-theme-bg-color, #ffffff); --text: var(--tg-theme-text-color, #1f2328); --hint: var(--tg-theme-hint-color, #6e7781); --bg-sec: var(--tg-theme-secondary-bg-color, #f4f4f5); }
+:root { --bg: var(--tg-theme-bg-color, #ffffff); --text: var(--tg-theme-text-color, #1f2328); --hint: var(--tg-theme-hint-color, #6e7781); --link: var(--tg-theme-link-color, #2481cc); --btn: var(--tg-theme-button-color, #2481cc); --btn-text: var(--tg-theme-button-text-color, #ffffff); --bg-sec: var(--tg-theme-secondary-bg-color, #f4f4f5); --vac: #A8D5FF; --off: #FFE680; --pre: #FFC58A; --spl: #D8B4FE; }
 * { box-sizing: border-box; }
-body { font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; padding: 14px; line-height: 1.5; background: var(--bg); color: var(--text); margin: 0; font-size: 14px; }
-h1 { font-size: 16px; margin: 0 0 12px; }
-.box { background: var(--bg-sec); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
-.box h3 { margin: 0 0 6px; font-size: 13px; }
-.box pre { margin: 0; white-space: pre-wrap; word-break: break-all; font-family: "Consolas", "Menlo", monospace; font-size: 11px; line-height: 1.4; }
-.status-ok { color: #1a7f37; font-weight: 700; }
-.status-warn { color: #b07000; font-weight: 700; }
-.status-err { color: #c74040; font-weight: 700; }
-.footer { color: var(--hint); font-size: 11px; margin-top: 10px; text-align: center; }
+html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; min-height: 100vh; overflow-x: hidden; }
+.app-header { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--bg-sec); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.app-header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+.lang-toggle { background: var(--bg-sec); border: none; color: var(--text); padding: 5px 10px; border-radius: 14px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.lang-toggle .active { font-weight: 700; color: var(--btn); }
+main { padding: 14px; max-width: 720px; margin: 0 auto; }
+.card { background: var(--bg-sec); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.card h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+.card .hint { color: var(--hint); font-size: 13px; margin: 4px 0; }
+.btn { display: inline-block; background: var(--btn); color: var(--btn-text); border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; }
+.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn-row .btn { padding: 14px 10px; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.btn-row .btn .emo { font-size: 20px; }
+.btn-row .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; }
+.legend-item { display: inline-flex; align-items: center; gap: 4px; }
+.swatch { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); display: inline-block; }
+.fullscreen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; text-align: center; z-index: 100; }
+.fullscreen .icon { font-size: 56px; margin-bottom: 16px; }
+.fullscreen h2 { margin: 0 0 8px; font-size: 18px; }
+.fullscreen p { color: var(--hint); margin: 4px 0; font-size: 13px; max-width: 90%; }
+.fullscreen pre { color: var(--hint); font-size: 10px; text-align: left; background: var(--bg-sec); padding: 8px; border-radius: 6px; max-width: 100%; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+.fullscreen .btn { margin-top: 18px; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--bg-sec); border-top-color: var(--btn); border-radius: 50%; animation: spin 0.9s linear infinite; margin-bottom: 14px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.meta-grid { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 12px; }
+.meta-grid dt { color: var(--hint); }
+.meta-grid dd { margin: 0; word-break: break-all; }
 </style>
 </head>
 <body>
-<h1>Casino Schedule — Stage 3a Probe</h1>
-<div class="box"><h3>1. API_BASE</h3><pre id="api-base">…</pre></div>
-<div class="box"><h3>2. Telegram WebApp SDK 상태</h3><pre id="sdk-state">진단 중…</pre></div>
-<div class="box"><h3>3. fetch ping (10초 timeout)</h3><pre id="fetch-state">대기 중…</pre></div>
-<div class="footer">3a 진단 — i18n / 카드 / 버튼은 3b에서 추가</div>
+<div id="loading" class="fullscreen"><div class="spinner"></div><p id="loading-text">Loading…</p></div>
+<div id="app" style="display:none;">
+  <header class="app-header">
+    <h1 id="header-title">Casino Schedule</h1>
+    <button class="lang-toggle" id="lang-toggle" type="button">
+      <span data-lang="en">EN</span> / <span data-lang="ko">한국어</span>
+    </button>
+  </header>
+  <main id="main"></main>
+</div>
 <script>
 "use strict";
 const API_BASE = "https://script.google.com/macros/s/AKfycbybll_0YVphugr4SS2-maVtKTJ1uIf8aRJheAMBLU9UkZAqAXjrFDRXjwqqbaGAQNhA/exec";
 const FETCH_TIMEOUT_MS = 10000;
-document.getElementById("api-base").textContent = API_BASE;
-
-function diagnoseSDK() {
-  const el = document.getElementById("sdk-state");
-  const tg = window.Telegram && window.Telegram.WebApp;
-  if (!tg) {
-    el.innerHTML = '<span class="status-err">❌ SDK 미로드</span>\nwindow.Telegram.WebApp 가 undefined입니다.\n원인: telegram-web-app.js 차단 또는 외부 브라우저에서 직접 열림';
-    return null;
+const I18N = {
+  en: {
+    "common.app_title":"Casino Schedule","common.refresh":"Refresh","common.loading":"Loading…",
+    "home.quick_actions":"Quick Actions","home.find_dealer":"Find Dealer","home.vacation_range":"Vacation Range","home.breaks_today":"Breaks today","home.shift_cycle":"Shift Cycle","home.add_staff":"Add Staff","home.backup":"Backup",
+    "my.todays_breaks":"Today's Breaks","my.no_breaks_today":"No break assignment today.","my.contact_admin_for_off":"Need a day off? Contact admin.",
+    "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
+    "state.vacation.full":"Vacation","state.dayoff.full":"Day off","state.pre_practice.full":"Pre-practice","state.special.full":"Special",
+    "shift.M.full":"Morning","shift.A.full":"Afternoon","shift.N.full":"Night",
+    "error.network":"Network error.","error.auth_missing":"Authentication required.","error.auth_invalid":"Invalid signature.","error.auth_expired":"Session expired.","error.not_registered":"Not registered. Contact admin.","error.internal":"Internal error.",
+    "boot.welcome_admin":"Welcome, {name} — admin.","boot.welcome_viewer":"Welcome, {name}.","boot.role_admin":"Administrator","boot.role_viewer":"View only","boot.connected":"Connected ✓","boot.legend":"Legend","boot.stage3b_note":"Stage 3b — quick actions disabled (Stage 4 enables them)."
+  },
+  ko: {
+    "common.app_title":"카지노 스케줄","common.refresh":"새로고침","common.loading":"불러오는 중…",
+    "home.quick_actions":"빠른 작업","home.find_dealer":"딜러 찾기","home.vacation_range":"휴가 범위","home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 사이클","home.add_staff":"인원 추가","home.backup":"백업",
+    "my.todays_breaks":"오늘 내 휴게","my.no_breaks_today":"오늘 휴게 배정 없음.","my.contact_admin_for_off":"휴무가 필요하면 관리자에게 문의하세요.",
+    "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
+    "state.vacation.full":"휴가","state.dayoff.full":"휴무","state.pre_practice.full":"사전연습","state.special.full":"특별",
+    "shift.M.full":"모닝","shift.A.full":"애프터눈","shift.N.full":"나잇",
+    "error.network":"네트워크 오류.","error.auth_missing":"인증이 필요합니다.","error.auth_invalid":"서명이 잘못되었습니다.","error.auth_expired":"세션 만료.","error.not_registered":"등록되지 않은 사용자입니다. 관리자에게 문의하세요.","error.internal":"내부 오류.",
+    "boot.welcome_admin":"안녕하세요, {name}님 — 관리자.","boot.welcome_viewer":"안녕하세요, {name}님.","boot.role_admin":"관리자","boot.role_viewer":"보기 전용","boot.connected":"연결됨 ✓","boot.legend":"색상 범례","boot.stage3b_note":"3b 단계 — 빠른 작업 버튼은 4단계에서 활성화."
   }
-  try { tg.ready(); tg.expand(); } catch (e) {}
-  const info = {
-    hasTg: true,
-    initDataLen: tg.initData ? tg.initData.length : 0,
-    initDataPreview: tg.initData ? (tg.initData.substring(0, 80) + (tg.initData.length > 80 ? "…" : "")) : "(empty)",
-    hasInitDataUnsafe: !!tg.initDataUnsafe,
-    userId: (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "(none)",
-    platform: tg.platform || "(none)",
-    version: tg.version || "(none)",
-    colorScheme: tg.colorScheme || "(none)"
-  };
-  let banner;
-  if (info.initDataLen > 0 && info.userId !== "(none)") banner = '<span class="status-ok">✅ SDK 로드 + initData 정상</span>\n';
-  else if (info.hasInitDataUnsafe) banner = '<span class="status-warn">⚠ SDK 로드 OK · initData 비어 있음</span>\n외부 브라우저(텔레그램 아님) 또는 봇이 정식 미니앱으로 인식 안 됨.\n';
-  else banner = '<span class="status-warn">⚠ SDK 로드 OK · initDataUnsafe 없음</span>\n';
-  el.innerHTML = banner + JSON.stringify(info, null, 2);
-  return tg;
-}
-
-async function fetchWithTimeout(url, ms) {
-  const controller = new AbortController();
-  const tid = setTimeout(() => controller.abort(), ms);
-  try {
-    return await fetch(url, { signal: controller.signal, method: "GET", redirect: "follow", mode: "cors", credentials: "omit" });
-  } finally { clearTimeout(tid); }
-}
-
-async function probeFetch(tg) {
-  const el = document.getElementById("fetch-state");
-  el.textContent = "fetch 중… (최대 " + (FETCH_TIMEOUT_MS / 1000) + "초 대기)";
+};
+let LANG = "en";
+function setLang(lang) { LANG = (lang === "ko") ? "ko" : "en"; try { localStorage.setItem("scheduleApp.lang", LANG); } catch (e) {} document.documentElement.setAttribute("lang", LANG); document.querySelectorAll(".lang-toggle [data-lang]").forEach(el => el.classList.toggle("active", el.dataset.lang === LANG)); }
+function detectInitialLang() { try { const s = localStorage.getItem("scheduleApp.lang"); if (s === "en" || s === "ko") return s; } catch (e) {} const tg = window.Telegram && window.Telegram.WebApp; const c = tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code; return (c && String(c).toLowerCase().startsWith("ko")) ? "ko" : "en"; }
+function t(key, vars) { const dict = I18N[LANG] || I18N.en; let s = dict[key]; if (s == null) { s = "[" + key + "]"; console.warn("[i18n] missing key:", key, LANG); } if (vars) Object.keys(vars).forEach(k => s = s.replace(new RegExp("\\{" + k + "\\}", "g"), vars[k])); return s; }
+function escapeHtml(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+async function fetchWithTimeout(url, ms) { const c = new AbortController(); const tid = setTimeout(() => c.abort(), ms); try { return await fetch(url, { signal: c.signal, method: "GET", redirect: "follow", mode: "cors", credentials: "omit" }); } finally { clearTimeout(tid); } }
+async function apiCall(action, extraParams) {
+  const tg = window.Telegram && window.Telegram.WebApp;
   const initData = (tg && tg.initData) || "";
   const params = new URLSearchParams();
-  params.set("action", "ping");
-  if (initData) params.set("initData", initData);
-  const url = API_BASE + "?" + params.toString();
+  params.set("action", action); if (initData) params.set("initData", initData);
+  if (extraParams) Object.keys(extraParams).forEach(k => { if (extraParams[k] != null) params.set(k, String(extraParams[k])); });
+  const sep = API_BASE.indexOf("?") >= 0 ? "&" : "?";
+  const res = await fetchWithTimeout(API_BASE + sep + params.toString(), FETCH_TIMEOUT_MS);
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return await res.json();
+}
+async function boot() {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+  setLang(detectInitialLang());
+  document.getElementById("loading-text").textContent = t("common.loading");
   try {
-    const t0 = Date.now();
-    const res = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
-    const dt = Date.now() - t0;
-    const text = await res.text();
-    let banner;
-    if (text.indexOf('"ok":true') >= 0) banner = '<span class="status-ok">✅ ping OK — 인증 통과 (' + dt + 'ms)</span>\n';
-    else if (text.indexOf('AUTH_MISSING') >= 0) banner = '<span class="status-warn">⚠ AUTH_MISSING — initData 없음 (외부 브라우저 정상)</span>\n응답 시간: ' + dt + 'ms\n';
-    else if (text.indexOf('AUTH_INVALID') >= 0) banner = '<span class="status-err">❌ AUTH_INVALID — HMAC 서명 검증 실패</span>\n응답 시간: ' + dt + 'ms\n';
-    else if (res.ok) banner = '<span class="status-warn">⚠ HTTP ' + res.status + ' — 예상 외 응답</span>\n응답 시간: ' + dt + 'ms\n';
-    else banner = '<span class="status-err">❌ HTTP ' + res.status + '</span>\n';
-    const preview = text.length > 600 ? text.substring(0, 600) + "…(truncated)" : text;
-    el.innerHTML = banner + "\n응답 (" + text.length + "자):\n" + preview;
-  } catch (err) {
-    if (err && err.name === "AbortError") {
-      el.innerHTML = '<span class="status-err">❌ TIMEOUT — ' + (FETCH_TIMEOUT_MS / 1000) + '초 안에 응답 없음</span>\n원인: 네트워크 차단, sandbox iframe, Apps Script hang.';
-    } else {
-      el.innerHTML = '<span class="status-err">❌ fetch 실패</span>\n' + (err && err.message ? err.message : String(err));
+    const r = await apiCall("ping");
+    if (!r || !r.ok) {
+      const code = (r && r.error && r.error.code) || "INTERNAL";
+      const msg = (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || t("error.internal");
+      showAuthError(code, msg); return;
     }
+    let saved = null; try { saved = localStorage.getItem("scheduleApp.lang"); } catch (e) {}
+    if (!saved && r.lang) setLang(r.lang);
+    renderHome(r.data);
+  } catch (err) {
+    if (err && err.name === "AbortError") showAuthError("TIMEOUT", t("error.network") + " (timeout)");
+    else showAuthError("NETWORK", t("error.network") + " — " + (err && err.message ? err.message : err));
   }
 }
-
-(async function main() {
-  const tg = diagnoseSDK();
-  await probeFetch(tg);
-})();
+function renderHome(data) {
+  const user = data.user || {};
+  const isAdmin = !!user.isAdmin;
+  const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
+  document.getElementById("header-title").textContent = t("common.app_title");
+  const main = document.getElementById("main");
+  main.innerHTML = isAdmin ? renderAdminHome_(user, name) : renderViewerHome_(user, name);
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  const toggle = document.getElementById("lang-toggle");
+  if (!toggle.dataset.bound) {
+    toggle.addEventListener("click", () => { setLang(LANG === "en" ? "ko" : "en"); renderHome(data); });
+    toggle.dataset.bound = "1";
+  }
+}
+function renderAdminHome_(user, name) {
+  return `
+    <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
+      <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p></div>
+    <div class="card"><h2>${t("boot.legend")}</h2>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background:var(--vac)"></span>${t("state.vacation.short")} · ${t("state.vacation.full")}</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--off)"></span>${t("state.dayoff.short")} · ${t("state.dayoff.full")}</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--pre)"></span>${t("state.pre_practice.short")} · ${t("state.pre_practice.full")}</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--spl)"></span>${t("state.special.short")} · ${t("state.special.full")}</span>
+      </div></div>
+    <div class="card"><h2>${t("home.quick_actions")}</h2>
+      <div class="btn-row">
+        <button class="btn" disabled><span class="emo">👤</span>${t("home.find_dealer")}</button>
+        <button class="btn" disabled><span class="emo">📅</span>${t("home.vacation_range")}</button>
+        <button class="btn" disabled><span class="emo">☕</span>${t("home.breaks_today")}</button>
+        <button class="btn" disabled><span class="emo">🔄</span>${t("home.shift_cycle")}</button>
+        <button class="btn" disabled><span class="emo">➕</span>${t("home.add_staff")}</button>
+        <button class="btn" disabled><span class="emo">📤</span>${t("home.backup")}</button>
+      </div>
+      <p class="hint" style="margin-top:10px;">${t("boot.stage3b_note")}</p></div>
+    <div class="card"><h2>${t("boot.connected")}</h2>
+      <dl class="meta-grid">
+        <dt>ID</dt><dd>${escapeHtml(user.id)}</dd>
+        <dt>TG</dt><dd>${escapeHtml(user.telegramUserId)}</dd>
+        <dt>API</dt><dd style="font-size:11px;">${escapeHtml(API_BASE)}</dd>
+      </dl></div>
+  `;
+}
+function renderViewerHome_(user, name) {
+  return `
+    <div class="card"><h2>${escapeHtml(t("boot.welcome_viewer", { name }))}</h2>
+      <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_viewer"))}</p></div>
+    <div class="card"><h2>${t("my.todays_breaks")}</h2>
+      <p class="hint">${t("my.no_breaks_today")}</p>
+      <p class="hint">${t("boot.stage3b_note")}</p></div>
+    <div class="card"><p class="hint">${t("my.contact_admin_for_off")}</p></div>
+  `;
+}
+function showAuthError(code, message) {
+  let icon = "⚠️", title = message, sub = "";
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const dbg = tg ? { hasTg: true, initDataLen: tg.initData ? tg.initData.length : 0, userId: (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "(none)", platform: tg.platform || "(none)" } : { hasTg: false };
+  if (code === "USER_NOT_REGISTERED") { icon = "🔒"; title = t("error.not_registered"); }
+  else if (code === "AUTH_MISSING" || code === "AUTH_INVALID" || code === "AUTH_EXPIRED") {
+    icon = "🔐"; title = (code === "AUTH_MISSING") ? t("error.auth_missing") : (code === "AUTH_INVALID") ? t("error.auth_invalid") : t("error.auth_expired");
+    sub = "DEBUG: " + JSON.stringify(dbg);
+  } else if (code === "NETWORK" || code === "TIMEOUT") { icon = "📡"; title = t("error.network"); sub = message; }
+  else { icon = "❌"; title = message || t("error.internal"); }
+  const loading = document.getElementById("loading");
+  loading.innerHTML = `<div class="icon">${icon}</div><h2>${escapeHtml(title)}</h2>${sub ? `<pre>${escapeHtml(sub)}</pre>` : ""}<button class="btn" onclick="location.reload()">${escapeHtml(t("common.refresh"))}</button>`;
+  loading.style.display = "flex";
+  document.getElementById("app").style.display = "none";
+}
+document.addEventListener("DOMContentLoaded", boot);
 </script>
 </body>
 </html>
