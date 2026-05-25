@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Casino Schedule</title>
-<!-- 마이크로 4b: 시프트 탭 + 4주 네비 (2026-05-25) -->
+<!-- 5단계: 화면 2 Find Dealer + 화면 3 Calendar (2026-05-25) -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
@@ -31,6 +32,7 @@
   .card .hint { color: var(--hint); font-size: 13px; margin: 4px 0; }
   .btn { display: inline-block; background: var(--btn); color: var(--btn-text); border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; }
   .btn.ghost { background: var(--bg-sec); color: var(--text); border: 1px solid var(--hint); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .btn-row .btn { padding: 14px 10px; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
   .btn-row .btn .emo { font-size: 22px; }
@@ -59,6 +61,46 @@
   .anchor-nav { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 10px; }
   .anchor-nav .ghost { background: var(--bg-sec); color: var(--text); border: 1px solid transparent; padding: 6px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; }
   .anchor-nav .range { font-size: 12px; color: var(--hint); flex: 1; text-align: center; min-width: 0; }
+
+  /* 5단계: 검색 + 필터 */
+  .search-bar { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 14px; }
+  .filter-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .filter-row select { flex: 1; min-width: 90px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 13px; }
+  .result-count { font-size: 12px; color: var(--hint); margin: 8px 0; }
+  .staff-card { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: var(--bg-sec); margin-bottom: 6px; cursor: pointer; border: 1px solid transparent; }
+  .staff-card:active { border-color: var(--btn); }
+  .staff-card .avatar { font-size: 22px; }
+  .staff-card .body { flex: 1; min-width: 0; }
+  .staff-card .name { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .staff-card .sub { font-size: 11px; color: var(--hint); }
+  .staff-card .status { font-size: 11px; padding: 2px 7px; border-radius: 10px; background: var(--bg); }
+  .staff-card .status.vac { background: var(--vac); color: #1a3a5a; }
+  .staff-card .status.off { background: var(--off); color: #5a4500; }
+  .staff-card .status.pre { background: var(--pre); color: #6a3a00; }
+  .staff-card .status.spl { background: var(--spl); color: #4a2a6a; }
+
+  /* 5단계: 캘린더 */
+  .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin: 8px 0; }
+  .calendar .head { font-size: 11px; color: var(--hint); text-align: center; padding: 4px 0; font-weight: 600; }
+  .calendar .head.sun { color: #d94545; }
+  .calendar .head.sat { color: #3b6ec7; }
+  .day-cell { aspect-ratio: 1; border-radius: 6px; background: var(--bg); border: 1px solid var(--bg-sec); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; line-height: 1.1; padding: 2px; }
+  .day-cell.today { outline: 2px solid var(--btn); }
+  .day-cell.outside-month { opacity: 0.5; }
+  .day-cell.viewer { cursor: default; }
+  .day-cell .d { font-size: 12px; font-weight: 600; }
+  .day-cell .lbl { font-size: 9px; font-weight: 700; margin-top: 1px; }
+  .day-cell.vac { background: var(--vac); color: #1a3a5a; }
+  .day-cell.off { background: var(--off); color: #5a4500; }
+  .day-cell.pre { background: var(--pre); color: #6a3a00; }
+  .day-cell.spl { background: var(--spl); color: #4a2a6a; }
+  .vacation-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; margin-top: 6px; }
+  .vacation-form label { font-size: 12px; color: var(--hint); display: block; }
+  .vacation-form input[type=date] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 13px; }
+  .vacation-form .apply-row { grid-column: 1 / -1; display: flex; gap: 8px; }
+  .vacation-form .apply-row .btn { flex: 1; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 18px; border-radius: 18px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.25s; pointer-events: none; max-width: 90%; text-align: center; }
+  .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -78,11 +120,13 @@
   <main id="main"></main>
 </div>
 
+<div id="toast" class="toast"></div>
+
 <script>
 "use strict";
 
 const API_BASE = "https://script.google.com/macros/s/AKfycbybll_0YVphugr4SS2-maVtKTJ1uIf8aRJheAMBLU9UkZAqAXjrFDRXjwqqbaGAQNhA/exec";
-const FETCH_TIMEOUT_MS = 10000;
+const FETCH_TIMEOUT_MS = 12000;
 
 // ────────────────────────────────────────────────────────────
 // i18n
@@ -91,8 +135,8 @@ const I18N = {
   en: {
     "common.app_title":"Casino Schedule","common.refresh":"Refresh","common.loading":"Loading…",
     "common.back":"Back","common.today":"Today","common.prev_4w":"◀ Prev 4w","common.next_4w":"Next 4w ▶",
-    "home.title":"Home",
-    "home.quick_actions":"Quick Actions",
+    "common.save":"Save","common.cancel":"Cancel","common.apply":"Apply","common.undo":"Undo",
+    "home.title":"Home","home.quick_actions":"Quick Actions",
     "home.find_dealer":"Find Dealer","home.vacation_range":"Vacation Range",
     "home.breaks_today":"Breaks today","home.shift_cycle":"Shift Cycle",
     "home.add_staff":"Add Staff","home.backup":"Backup",
@@ -101,27 +145,45 @@ const I18N = {
     "my.contact_admin_for_off":"Need a day off? Contact admin.",
     "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
     "state.vacation.full":"Vacation","state.dayoff.full":"Day off","state.pre_practice.full":"Pre-practice","state.special.full":"Special",
+    "state.work.full":"Working",
     "shift.M.full":"Morning","shift.A.full":"Afternoon","shift.N.full":"Night",
     "shift.M.time":"07:00–15:00","shift.A.time":"15:00–23:00","shift.N.time":"23:00–07:00 +1d",
     "error.network":"Network error.","error.auth_missing":"Authentication required.",
     "error.auth_invalid":"Invalid signature.","error.auth_expired":"Session expired.",
     "error.not_registered":"Not registered. Contact admin.","error.internal":"Internal error.",
+    "error.forbidden":"Admin only.","error.bad_input":"Invalid input.",
     "boot.welcome_admin":"Welcome, {name} — admin.","boot.welcome_viewer":"Welcome, {name}.",
     "boot.role_admin":"Administrator","boot.role_viewer":"View only",
     "boot.connected":"Connected ✓","boot.legend":"Legend",
     "placeholder.coming_in":"Coming in Stage {n}.",
-    "placeholder.find_dealer.desc":"Search dealers/supervisors by name, shift, status.",
-    "placeholder.vacation_range.desc":"Bulk vacation by date range.",
+    "placeholder.vacation_range.desc":"Open from a dealer calendar (Find Dealer → tap card).",
     "placeholder.breaks_today.desc":"Today's auto break assignments + supervisor manual slots.",
     "placeholder.shift_cycle.desc":"Create / end shift cycles.",
     "placeholder.add_staff.desc":"Add new dealer/supervisor + Telegram ID mapping.",
-    "placeholder.backup.desc":"Spreadsheet auto backup (weekly)."
+    "placeholder.backup.desc":"Spreadsheet auto backup (weekly).",
+    "search.placeholder":"Type name or ID…",
+    "search.filter_all_shifts":"All shifts","search.filter_active":"Active","search.filter_inactive":"Inactive",
+    "search.filter_dealer":"Dealer","search.filter_supervisor":"Supervisor","search.filter_all_cat":"All roles",
+    "search.showing":"Showing {n} of {total}",
+    "search.no_results":"No matching staff",
+    "search.status_working":"working","search.status_on_vacation":"on vacation","search.status_day_off":"day off",
+    "search.status_pre_practice":"pre-practice","search.status_special":"special",
+    "calendar.set_vacation_range":"Set vacation range",
+    "calendar.from":"From","calendar.to":"To",
+    "calendar.apply_vacation":"Apply Vacation",
+    "calendar.viewer_locked":"View only — admin must edit.",
+    "calendar.cell_help":"Tap cell to cycle: work → VAC → OFF → PRE → SPL → work.",
+    "calendar.mon":"Mon","calendar.tue":"Tue","calendar.wed":"Wed","calendar.thu":"Thu","calendar.fri":"Fri","calendar.sat":"Sat","calendar.sun":"Sun",
+    "toast.cell_updated":"Cell updated","toast.vacation_applied":"Vacation applied ({n} days)",
+    "toast.vacation_pinned_skipped":"{n} day(s) skipped (manually pinned)",
+    "toast.from_after_to":"Start date is after end date.",
+    "toast.action_failed":"Action failed — {msg}"
   },
   ko: {
     "common.app_title":"카지노 스케줄","common.refresh":"새로고침","common.loading":"불러오는 중…",
     "common.back":"뒤로","common.today":"오늘","common.prev_4w":"◀ 이전 4주","common.next_4w":"다음 4주 ▶",
-    "home.title":"홈",
-    "home.quick_actions":"빠른 작업",
+    "common.save":"저장","common.cancel":"취소","common.apply":"적용","common.undo":"되돌리기",
+    "home.title":"홈","home.quick_actions":"빠른 작업",
     "home.find_dealer":"딜러 찾기","home.vacation_range":"휴가 범위",
     "home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 사이클",
     "home.add_staff":"인원 추가","home.backup":"백업",
@@ -130,21 +192,39 @@ const I18N = {
     "my.contact_admin_for_off":"휴무가 필요하면 관리자에게 문의하세요.",
     "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
     "state.vacation.full":"휴가","state.dayoff.full":"휴무","state.pre_practice.full":"사전연습","state.special.full":"특별",
+    "state.work.full":"출근",
     "shift.M.full":"모닝","shift.A.full":"애프터눈","shift.N.full":"나잇",
     "shift.M.time":"07:00–15:00","shift.A.time":"15:00–23:00","shift.N.time":"23:00–07:00 익일",
     "error.network":"네트워크 오류.","error.auth_missing":"인증이 필요합니다.",
     "error.auth_invalid":"서명이 잘못되었습니다.","error.auth_expired":"세션 만료.",
     "error.not_registered":"등록되지 않은 사용자입니다. 관리자에게 문의하세요.","error.internal":"내부 오류.",
+    "error.forbidden":"관리자 전용.","error.bad_input":"입력값이 잘못되었습니다.",
     "boot.welcome_admin":"안녕하세요, {name}님 — 관리자.","boot.welcome_viewer":"안녕하세요, {name}님.",
     "boot.role_admin":"관리자","boot.role_viewer":"보기 전용",
     "boot.connected":"연결됨 ✓","boot.legend":"색상 범례",
     "placeholder.coming_in":"{n}단계에서 활성화됩니다.",
-    "placeholder.find_dealer.desc":"이름·시프트·상태로 딜러/슈퍼바이저 검색.",
-    "placeholder.vacation_range.desc":"날짜 범위 휴가 일괄 입력.",
+    "placeholder.vacation_range.desc":"딜러 찾기 → 카드 탭 후 해당 캘린더에서 입력하세요.",
     "placeholder.breaks_today.desc":"오늘 자동 휴게 배정 + 슈퍼바이저 수동 슬롯.",
     "placeholder.shift_cycle.desc":"시프트 사이클 생성/종료.",
     "placeholder.add_staff.desc":"신규 딜러/슈퍼바이저 추가 + 텔레그램 ID 매핑.",
-    "placeholder.backup.desc":"스프레드시트 자동 백업 (주1회)."
+    "placeholder.backup.desc":"스프레드시트 자동 백업 (주1회).",
+    "search.placeholder":"이름 또는 ID 입력…",
+    "search.filter_all_shifts":"모든 시프트","search.filter_active":"재직","search.filter_inactive":"비활성",
+    "search.filter_dealer":"딜러","search.filter_supervisor":"슈퍼바이저","search.filter_all_cat":"모든 역할",
+    "search.showing":"{total}명 중 {n}명 표시",
+    "search.no_results":"일치하는 직원 없음",
+    "search.status_working":"출근","search.status_on_vacation":"오늘 휴가","search.status_day_off":"오늘 휴무",
+    "search.status_pre_practice":"오늘 사전연습","search.status_special":"오늘 특별",
+    "calendar.set_vacation_range":"휴가 범위 설정",
+    "calendar.from":"시작","calendar.to":"종료",
+    "calendar.apply_vacation":"휴가 적용",
+    "calendar.viewer_locked":"보기 전용 — 수정은 관리자에게.",
+    "calendar.cell_help":"셀 탭으로 상태 순환: 출근 → VAC → OFF → PRE → SPL → 출근.",
+    "calendar.mon":"월","calendar.tue":"화","calendar.wed":"수","calendar.thu":"목","calendar.fri":"금","calendar.sat":"토","calendar.sun":"일",
+    "toast.cell_updated":"셀 갱신됨","toast.vacation_applied":"휴가 적용 ({n}일)",
+    "toast.vacation_pinned_skipped":"{n}일은 수동 변경으로 보존됨",
+    "toast.from_after_to":"시작일이 종료일보다 늦습니다.",
+    "toast.action_failed":"실패 — {msg}"
   }
 };
 
@@ -172,7 +252,7 @@ function detectInitialLang() {
 function t(key, vars) {
   const dict = I18N[LANG] || I18N.en;
   let s = dict[key];
-  if (s == null) { s = "[" + key + "]"; console.warn("[i18n] missing key:", key, LANG); }
+  if (s == null) { s = "[" + key + "]"; console.warn("[i18n] missing:", key, LANG); }
   if (vars) Object.keys(vars).forEach(k => s = s.replace(new RegExp("\\{" + k + "\\}", "g"), vars[k]));
   return s;
 }
@@ -182,35 +262,28 @@ function escapeHtml(s) {
 }
 
 // ────────────────────────────────────────────────────────────
-// 날짜 유틸 (4b: 4주 anchor 네비)
+// 날짜 유틸
 // ────────────────────────────────────────────────────────────
 function pad2(n) { return String(n).padStart(2, "0"); }
 function fmtDate(d) { return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()); }
 function parseDate(iso) { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m-1, d); }
 function addDays(d, n) { const r = new Date(d.getFullYear(), d.getMonth(), d.getDate()); r.setDate(r.getDate() + n); return r; }
-function mondayOfThisWeek() {
-  const d = new Date(); d.setHours(0, 0, 0, 0);
-  const dow = d.getDay();
-  const offset = (dow === 0) ? -6 : (1 - dow);
-  return fmtDate(addDays(d, offset));
-}
-function rangeLabel(anchorIso) {
-  const start = parseDate(anchorIso);
-  const end = addDays(start, 27);
-  return fmtDate(start) + " ─ " + fmtDate(end);
-}
+function mondayOfThisWeek() { const d = new Date(); d.setHours(0,0,0,0); const dow = d.getDay(); const off = (dow === 0) ? -6 : (1 - dow); return fmtDate(addDays(d, off)); }
+function rangeLabel(anchorIso) { const s = parseDate(anchorIso); const e = addDays(s, 27); return fmtDate(s) + " ─ " + fmtDate(e); }
+function todayIso() { return fmtDate(new Date()); }
 
 // ────────────────────────────────────────────────────────────
 // 네트워크
 // ────────────────────────────────────────────────────────────
-async function fetchWithTimeout(url, ms) {
+async function fetchWithTimeout(url, ms, opts) {
   const c = new AbortController();
   const tid = setTimeout(() => c.abort(), ms);
-  try { return await fetch(url, { signal: c.signal, method: "GET", redirect: "follow", mode: "cors", credentials: "omit" }); }
-  finally { clearTimeout(tid); }
+  try {
+    return await fetch(url, Object.assign({ signal: c.signal, redirect: "follow", mode: "cors", credentials: "omit" }, opts || {}));
+  } finally { clearTimeout(tid); }
 }
 
-async function apiCall(action, extraParams) {
+async function apiGet(action, extraParams) {
   const tg = window.Telegram && window.Telegram.WebApp;
   const initData = (tg && tg.initData) || "";
   const params = new URLSearchParams();
@@ -218,17 +291,39 @@ async function apiCall(action, extraParams) {
   if (initData) params.set("initData", initData);
   if (extraParams) Object.keys(extraParams).forEach(k => { if (extraParams[k] != null) params.set(k, String(extraParams[k])); });
   const sep = API_BASE.indexOf("?") >= 0 ? "&" : "?";
-  const res = await fetchWithTimeout(API_BASE + sep + params.toString(), FETCH_TIMEOUT_MS);
+  const res = await fetchWithTimeout(API_BASE + sep + params.toString(), FETCH_TIMEOUT_MS, { method: "GET" });
   if (!res.ok) throw new Error("HTTP " + res.status);
   return await res.json();
 }
 
+async function apiPost(action, body) {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const initData = (tg && tg.initData) || "";
+  const payload = Object.assign({ action: action, initData: initData }, body || {});
+  const res = await fetchWithTimeout(API_BASE, FETCH_TIMEOUT_MS, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=UTF-8" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return await res.json();
+}
+
+function showToast(msg, ms) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  if (el._tid) clearTimeout(el._tid);
+  el._tid = setTimeout(() => el.classList.remove("show"), ms || 2400);
+}
+
 // ────────────────────────────────────────────────────────────
-// 상태 + 라우팅
+// 상태
 // ────────────────────────────────────────────────────────────
 const SCREEN_HOME = "home";
+const SCREEN_FIND_DEALER = "find_dealer";
+const SCREEN_CALENDAR = "calendar";
 const PLACEHOLDER_SCREENS = {
-  "find_dealer":    { emo: "👤", titleKey: "home.find_dealer",    descKey: "placeholder.find_dealer.desc",    stage: 5 },
   "vacation_range": { emo: "📅", titleKey: "home.vacation_range", descKey: "placeholder.vacation_range.desc", stage: 5 },
   "breaks_today":   { emo: "☕", titleKey: "home.breaks_today",   descKey: "placeholder.breaks_today.desc",   stage: 6 },
   "shift_cycle":    { emo: "🔄", titleKey: "home.shift_cycle",    descKey: "placeholder.shift_cycle.desc",    stage: 8 },
@@ -237,9 +332,19 @@ const PLACEHOLDER_SCREENS = {
 };
 
 let currentScreen = SCREEN_HOME;
-let currentShift = "A";  // localStorage / user.defaultShift / "A" 폴백
-let currentAnchor = mondayOfThisWeek();  // localStorage / 오늘 주의 월요일
+let currentShift = "A";
+let currentAnchor = mondayOfThisWeek();
 let bootData = null;
+
+// 5단계: 검색 + 캘린더 상태
+let searchQuery = "";
+let searchFilters = { shift: "all", category: "all", active: "true" };
+let searchResults = [];
+let searchTotal = 0;
+let searchLoading = false;
+let searchDebounceTid = null;
+let selectedStaff = null;   // 카드 탭 시 임시 저장 (id/name 등)
+let staffDetail = null;     // { employee, anchor, dayStates }
 
 function navigate(screen) { currentScreen = screen; render(); }
 
@@ -251,53 +356,64 @@ function setShift(shift) {
 }
 
 function moveAnchor(days) {
-  if (days === 0) {
-    currentAnchor = mondayOfThisWeek();
-  } else {
-    currentAnchor = fmtDate(addDays(parseDate(currentAnchor), days));
-  }
+  if (days === 0) currentAnchor = mondayOfThisWeek();
+  else currentAnchor = fmtDate(addDays(parseDate(currentAnchor), days));
   try { localStorage.setItem("scheduleApp.anchor", currentAnchor); } catch (e) {}
   render();
 }
 
 function loadPersistedState(user) {
   try {
-    const savedShift = localStorage.getItem("scheduleApp.shift");
-    if (savedShift === "M" || savedShift === "A" || savedShift === "N") currentShift = savedShift;
+    const s = localStorage.getItem("scheduleApp.shift");
+    if (s === "M" || s === "A" || s === "N") currentShift = s;
     else if (user && user.defaultShift) currentShift = user.defaultShift;
   } catch (e) {}
   try {
-    const savedAnchor = localStorage.getItem("scheduleApp.anchor");
-    if (savedAnchor && /^\d{4}-\d{2}-\d{2}$/.test(savedAnchor)) currentAnchor = savedAnchor;
+    const a = localStorage.getItem("scheduleApp.anchor");
+    if (a && /^\d{4}-\d{2}-\d{2}$/.test(a)) currentAnchor = a;
   } catch (e) {}
 }
 
+// ────────────────────────────────────────────────────────────
+// 렌더 — 화면 분기
+// ────────────────────────────────────────────────────────────
 function render() {
   if (!bootData) return;
   const user = bootData.user || {};
   const isAdmin = !!user.isAdmin;
-  const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
 
   // 헤더
   const backBtn = document.getElementById("back-btn");
   const headerTitle = document.getElementById("header-title");
+
+  let title = t("common.app_title");
   if (currentScreen === SCREEN_HOME) {
     backBtn.style.display = "none";
-    headerTitle.textContent = t("common.app_title");
-  } else {
+  } else if (currentScreen === SCREEN_FIND_DEALER) {
     backBtn.style.display = "inline-block";
-    const cfg = PLACEHOLDER_SCREENS[currentScreen];
-    headerTitle.textContent = cfg ? t(cfg.titleKey) : t("common.app_title");
+    title = t("home.find_dealer");
+  } else if (currentScreen === SCREEN_CALENDAR) {
+    backBtn.style.display = "inline-block";
+    title = selectedStaff ? selectedStaff.name : t("home.find_dealer");
+  } else if (PLACEHOLDER_SCREENS[currentScreen]) {
+    backBtn.style.display = "inline-block";
+    title = t(PLACEHOLDER_SCREENS[currentScreen].titleKey);
   }
+  headerTitle.textContent = title;
 
-  // 본문
   const main = document.getElementById("main");
   if (currentScreen === SCREEN_HOME) {
-    main.innerHTML = isAdmin ? renderAdminHome_(user, name) : renderViewerHome_(user, name);
+    main.innerHTML = isAdmin ? renderAdminHome_(user) : renderViewerHome_(user);
+  } else if (currentScreen === SCREEN_FIND_DEALER) {
+    main.innerHTML = renderFindDealer_();
+    bindSearchInput();
+    triggerSearch();  // 초기 또는 직전 검색 갱신
+  } else if (currentScreen === SCREEN_CALENDAR) {
+    main.innerHTML = renderCalendar_(user);
   } else if (PLACEHOLDER_SCREENS[currentScreen]) {
     main.innerHTML = renderPlaceholder_(currentScreen);
   } else {
-    main.innerHTML = renderAdminHome_(user, name);
+    main.innerHTML = renderAdminHome_(user);
   }
 
   document.getElementById("loading").style.display = "none";
@@ -309,10 +425,9 @@ function renderShiftAndAnchor_() {
     <div class="card">
       <h2>${t("home.shift_view")}</h2>
       <div class="shift-tabs">
-        ${["M", "A", "N"].map(s => `
+        ${["M","A","N"].map(s => `
           <button class="shift-tab ${currentShift === s ? "active" : ""}" data-shift="${s}">
-            ${t("shift." + s + ".full")}
-            <span class="sub">${t("shift." + s + ".time")}</span>
+            ${t("shift." + s + ".full")}<span class="sub">${t("shift." + s + ".time")}</span>
           </button>
         `).join("")}
       </div>
@@ -326,10 +441,13 @@ function renderShiftAndAnchor_() {
   `;
 }
 
-function renderAdminHome_(user, name) {
+function renderAdminHome_(user) {
+  const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
   return `
-    <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
-      <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p></div>
+    <div class="card">
+      <h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
+      <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p>
+    </div>
     ${renderShiftAndAnchor_()}
     <div class="card"><h2>${t("boot.legend")}</h2>
       <div class="legend">
@@ -337,31 +455,34 @@ function renderAdminHome_(user, name) {
         <span class="legend-item"><span class="swatch" style="background:var(--off)"></span>${t("state.dayoff.short")} · ${t("state.dayoff.full")}</span>
         <span class="legend-item"><span class="swatch" style="background:var(--pre)"></span>${t("state.pre_practice.short")} · ${t("state.pre_practice.full")}</span>
         <span class="legend-item"><span class="swatch" style="background:var(--spl)"></span>${t("state.special.short")} · ${t("state.special.full")}</span>
-      </div></div>
+      </div>
+    </div>
     <div class="card"><h2>${t("home.quick_actions")}</h2>
       <div class="btn-row">
-        <button class="btn" data-nav="find_dealer"><span class="emo">👤</span>${t("home.find_dealer")}</button>
+        <button class="btn" data-nav="${SCREEN_FIND_DEALER}"><span class="emo">👤</span>${t("home.find_dealer")}</button>
         <button class="btn" data-nav="vacation_range"><span class="emo">📅</span>${t("home.vacation_range")}</button>
         <button class="btn" data-nav="breaks_today"><span class="emo">☕</span>${t("home.breaks_today")}</button>
         <button class="btn" data-nav="shift_cycle"><span class="emo">🔄</span>${t("home.shift_cycle")}</button>
         <button class="btn" data-nav="add_staff"><span class="emo">➕</span>${t("home.add_staff")}</button>
         <button class="btn" data-nav="backup"><span class="emo">📤</span>${t("home.backup")}</button>
-      </div></div>
-    <div class="card"><h2>${t("boot.connected")}</h2>
-      <dl class="meta-grid">
-        <dt>ID</dt><dd>${escapeHtml(user.id)}</dd>
-        <dt>TG</dt><dd>${escapeHtml(user.telegramUserId)}</dd>
-        <dt>API</dt><dd style="font-size:11px;">${escapeHtml(API_BASE)}</dd>
-      </dl></div>
+      </div>
+    </div>
   `;
 }
 
-function renderViewerHome_(user, name) {
+function renderViewerHome_(user) {
+  const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
   return `
-    <div class="card"><h2>${escapeHtml(t("boot.welcome_viewer", { name }))}</h2>
-      <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_viewer"))}</p></div>
+    <div class="card">
+      <h2>${escapeHtml(t("boot.welcome_viewer", { name }))}</h2>
+      <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_viewer"))}</p>
+    </div>
     <div class="card"><h2>${t("my.todays_breaks")}</h2>
-      <p class="hint">${t("my.no_breaks_today")}</p></div>
+      <p class="hint">${t("my.no_breaks_today")}</p>
+    </div>
+    <div class="card">
+      <button class="btn" data-nav="${SCREEN_FIND_DEALER}" style="width:100%;">👤 ${t("home.find_dealer")}</button>
+    </div>
     <div class="card"><p class="hint">${t("my.contact_admin_for_off")}</p></div>
   `;
 }
@@ -380,6 +501,284 @@ function renderPlaceholder_(screen) {
 }
 
 // ────────────────────────────────────────────────────────────
+// 화면 2: Find Dealer
+// ────────────────────────────────────────────────────────────
+function renderFindDealer_() {
+  return `
+    <div class="card">
+      <input type="text" id="search-q" class="search-bar" placeholder="${escapeHtml(t("search.placeholder"))}" value="${escapeHtml(searchQuery)}">
+      <div class="filter-row">
+        <select id="filter-shift">
+          <option value="all">${t("search.filter_all_shifts")}</option>
+          <option value="M">${t("shift.M.full")}</option>
+          <option value="A">${t("shift.A.full")}</option>
+          <option value="N">${t("shift.N.full")}</option>
+        </select>
+        <select id="filter-category">
+          <option value="all">${t("search.filter_all_cat")}</option>
+          <option value="dealer">${t("search.filter_dealer")}</option>
+          <option value="supervisor">${t("search.filter_supervisor")}</option>
+        </select>
+        <select id="filter-active">
+          <option value="true">${t("search.filter_active")}</option>
+          <option value="false">${t("search.filter_inactive")}</option>
+          <option value="all">${t("search.filter_all_shifts")}</option>
+        </select>
+      </div>
+      <div class="result-count" id="result-count">${searchLoading ? t("common.loading") : ""}</div>
+      <div id="search-results">
+        ${searchResults.length === 0 && !searchLoading ? `<p class="hint" style="text-align:center;">${t("search.no_results")}</p>` : ""}
+        ${searchResults.map(s => renderStaffCard_(s)).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function bindSearchInput() {
+  const q = document.getElementById("search-q");
+  if (q) {
+    q.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      if (searchDebounceTid) clearTimeout(searchDebounceTid);
+      searchDebounceTid = setTimeout(() => triggerSearch(), 300);
+    });
+  }
+  ["filter-shift","filter-category","filter-active"].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.value = searchFilters[id.replace("filter-","")];
+    sel.addEventListener("change", (e) => {
+      searchFilters[id.replace("filter-","")] = e.target.value;
+      triggerSearch();
+    });
+  });
+}
+
+async function triggerSearch() {
+  searchLoading = true;
+  updateSearchUI_();
+  try {
+    const r = await apiGet("searchStaff", {
+      q: searchQuery, shift: searchFilters.shift, category: searchFilters.category,
+      active: searchFilters.active, limit: 50, offset: 0
+    });
+    if (r && r.ok && r.data) {
+      searchResults = r.data.items || [];
+      searchTotal = r.data.total || 0;
+    } else {
+      searchResults = []; searchTotal = 0;
+      showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+    }
+  } catch (err) {
+    searchResults = []; searchTotal = 0;
+    showToast(t("toast.action_failed", { msg: err.message || err }));
+  } finally {
+    searchLoading = false;
+    updateSearchUI_();
+  }
+}
+
+function updateSearchUI_() {
+  const rc = document.getElementById("result-count");
+  if (rc) {
+    rc.textContent = searchLoading ? t("common.loading")
+      : (searchResults.length === 0 ? t("search.no_results") : t("search.showing", { n: searchResults.length, total: searchTotal }));
+  }
+  const r = document.getElementById("search-results");
+  if (r) {
+    if (searchResults.length === 0 && !searchLoading) {
+      r.innerHTML = `<p class="hint" style="text-align:center;">${t("search.no_results")}</p>`;
+    } else {
+      r.innerHTML = searchResults.map(s => renderStaffCard_(s)).join("");
+    }
+  }
+}
+
+function renderStaffCard_(s) {
+  const name = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id);
+  const sub = (s.category === "dealer" ? "🃏" : "🎯") + " " + escapeHtml(s.category) + " · " + escapeHtml(t("shift." + s.defaultShift + ".full"));
+  let statusHtml = "";
+  if (s.todayState === "vacation") statusHtml = `<span class="status vac">${t("state.vacation.short")}</span>`;
+  else if (s.todayState === "dayoff") statusHtml = `<span class="status off">${t("state.dayoff.short")}</span>`;
+  else if (s.todayState === "pre_practice") statusHtml = `<span class="status pre">${t("state.pre_practice.short")}</span>`;
+  else if (s.todayState === "special") statusHtml = `<span class="status spl">${t("state.special.short")}</span>`;
+  else statusHtml = `<span class="status">${t("search.status_working")}</span>`;
+
+  return `
+    <div class="staff-card" data-staff-id="${escapeHtml(s.id)}" data-staff-name="${escapeHtml(name)}">
+      <div class="avatar">👤</div>
+      <div class="body">
+        <div class="name">${escapeHtml(name)}</div>
+        <div class="sub">${sub}</div>
+      </div>
+      ${statusHtml}
+    </div>
+  `;
+}
+
+// ────────────────────────────────────────────────────────────
+// 화면 3: Calendar
+// ────────────────────────────────────────────────────────────
+async function openCalendar(staffId, staffName) {
+  selectedStaff = { id: staffId, name: staffName };
+  currentScreen = SCREEN_CALENDAR;
+  staffDetail = null;  // 로딩 상태
+  render();
+  try {
+    const r = await apiGet("getStaffDetail", { employeeId: staffId, anchor: currentAnchor });
+    if (r && r.ok && r.data) {
+      staffDetail = r.data;
+    } else {
+      showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+    }
+  } catch (err) {
+    showToast(t("toast.action_failed", { msg: err.message || err }));
+  }
+  render();
+}
+
+function renderCalendar_(user) {
+  if (!selectedStaff) return `<div class="card"><p class="hint">${t("search.no_results")}</p></div>`;
+  const isAdmin = !!user.isAdmin;
+  const dayStates = (staffDetail && staffDetail.dayStates) || {};
+  const empCategory = staffDetail && staffDetail.employee ? staffDetail.employee.category : "";
+  const empShift = staffDetail && staffDetail.employee ? staffDetail.employee.defaultShift : "";
+
+  // 28일 셀 생성 (anchor 월요일부터)
+  const anchorIso = (staffDetail && staffDetail.anchor) || currentAnchor;
+  const today = todayIso();
+  const days = [];
+  for (let i = 0; i < 28; i++) {
+    const iso = fmtDate(addDays(parseDate(anchorIso), i));
+    const cell = dayStates[iso];
+    days.push({
+      iso: iso, day: parseDate(iso).getDate(),
+      state: cell ? cell.state : "work",
+      pinned: cell ? cell.pinned : false,
+      isToday: iso === today
+    });
+  }
+
+  // 요일 헤더 (월요일 시작 가정)
+  const dowKeys = ["calendar.mon","calendar.tue","calendar.wed","calendar.thu","calendar.fri","calendar.sat","calendar.sun"];
+  const dowHeader = dowKeys.map((k, i) => `<div class="head ${i===5?"sat":i===6?"sun":""}">${t(k)}</div>`).join("");
+
+  const cells = days.map((d, i) => {
+    const dow = i % 7;
+    const cls = ["day-cell"];
+    if (d.state === "vacation") cls.push("vac");
+    else if (d.state === "dayoff") cls.push("off");
+    else if (d.state === "pre_practice") cls.push("pre");
+    else if (d.state === "special") cls.push("spl");
+    if (d.isToday) cls.push("today");
+    if (!isAdmin) cls.push("viewer");
+    const lblText = d.state === "vacation" ? t("state.vacation.short")
+                  : d.state === "dayoff" ? t("state.dayoff.short")
+                  : d.state === "pre_practice" ? t("state.pre_practice.short")
+                  : d.state === "special" ? t("state.special.short") : "";
+    return `<div class="${cls.join(" ")}" data-cell-date="${d.iso}" data-cell-state="${d.state}"><span class="d">${d.day}</span>${lblText?`<span class="lbl">${lblText}</span>`:""}</div>`;
+  }).join("");
+
+  const vacForm = isAdmin ? `
+    <div class="card">
+      <h2>${t("calendar.set_vacation_range")}</h2>
+      <div class="vacation-form">
+        <div><label>${t("calendar.from")}</label><input type="date" id="vac-from" value="${anchorIso}"></div>
+        <div><label>${t("calendar.to")}</label><input type="date" id="vac-to" value="${fmtDate(addDays(parseDate(anchorIso), 4))}"></div>
+        <div class="apply-row">
+          <button class="btn" id="vac-apply">${t("calendar.apply_vacation")}</button>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:8px;">${t("calendar.cell_help")}</p>
+    </div>
+  ` : `
+    <div class="card"><p class="hint">${t("calendar.viewer_locked")}</p></div>
+  `;
+
+  const loadingHtml = !staffDetail ? `<div class="card"><p class="hint">${t("common.loading")}</p></div>` : "";
+
+  return `
+    <div class="card">
+      <h2>${escapeHtml(selectedStaff.name)}</h2>
+      <p class="hint">${escapeHtml(empCategory)} · ${empShift ? escapeHtml(t("shift." + empShift + ".full")) : ""}</p>
+    </div>
+    ${loadingHtml}
+    ${staffDetail ? `
+      <div class="card">
+        <div class="anchor-nav" style="margin-bottom:8px;">
+          <button class="ghost" data-anchor-delta="-28">${t("common.prev_4w")}</button>
+          <span class="range">${escapeHtml(rangeLabel(anchorIso))}</span>
+          <button class="ghost" data-anchor-delta="0">${t("common.today")}</button>
+          <button class="ghost" data-anchor-delta="28">${t("common.next_4w")}</button>
+        </div>
+        <div class="calendar">${dowHeader}${cells}</div>
+      </div>
+      ${vacForm}
+    ` : ""}
+  `;
+}
+
+// 셀 토글 (admin)
+async function toggleCell(date, currentState) {
+  const order = ["work","vacation","dayoff","pre_practice","special"];
+  const idx = order.indexOf(currentState);
+  const next = order[(idx + 1) % order.length];
+  // 낙관적 업데이트
+  if (staffDetail && staffDetail.dayStates) {
+    if (next === "work") delete staffDetail.dayStates[date];
+    else staffDetail.dayStates[date] = { state: next, pinned: true, note: "" };
+  }
+  render();
+  try {
+    const r = await apiPost("setCellState", {
+      date: date, employeeId: selectedStaff.id, state: next, pinned: next !== "work"
+    });
+    if (!r || !r.ok) {
+      showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+      // 롤백
+      if (staffDetail && staffDetail.dayStates) {
+        if (currentState === "work") delete staffDetail.dayStates[date];
+        else staffDetail.dayStates[date] = { state: currentState, pinned: true, note: "" };
+      }
+      render();
+    }
+  } catch (err) {
+    showToast(t("toast.action_failed", { msg: err.message || err }));
+  }
+}
+
+// 휴가 범위 적용
+async function applyVacationRange() {
+  const from = document.getElementById("vac-from").value;
+  const to = document.getElementById("vac-to").value;
+  if (!from || !to) return;
+  if (from > to) { showToast(t("toast.from_after_to")); return; }
+  try {
+    const r = await apiPost("applyVacationRange", {
+      employeeId: selectedStaff.id, startDate: from, endDate: to
+    });
+    if (r && r.ok && r.data) {
+      const aff = (r.data.affectedDates || []).length;
+      const skip = (r.data.skippedDates || []).length;
+      // 캘린더에 반영
+      (r.data.affectedDates || []).forEach(d => {
+        if (!staffDetail) staffDetail = { dayStates: {} };
+        if (!staffDetail.dayStates) staffDetail.dayStates = {};
+        staffDetail.dayStates[d] = { state: "vacation", pinned: false, note: "" };
+      });
+      render();
+      let msg = t("toast.vacation_applied", { n: aff });
+      if (skip > 0) msg += " · " + t("toast.vacation_pinned_skipped", { n: skip });
+      showToast(msg, 3200);
+    } else {
+      showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+    }
+  } catch (err) {
+    showToast(t("toast.action_failed", { msg: err.message || err }));
+  }
+}
+
+// ────────────────────────────────────────────────────────────
 // 부팅 + 이벤트
 // ────────────────────────────────────────────────────────────
 async function boot() {
@@ -388,12 +787,11 @@ async function boot() {
   setLang(detectInitialLang());
   document.getElementById("loading-text").textContent = t("common.loading");
   try {
-    const r = await apiCall("ping");
+    const r = await apiGet("ping");
     if (!r || !r.ok) {
       const code = (r && r.error && r.error.code) || "INTERNAL";
       const msg = (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || t("error.internal");
-      showAuthError(code, msg);
-      return;
+      showAuthError(code, msg); return;
     }
     let saved = null;
     try { saved = localStorage.getItem("scheduleApp.lang"); } catch (e) {}
@@ -417,18 +815,55 @@ function bindEvents() {
   }
   const back = document.getElementById("back-btn");
   if (!back.dataset.bound) {
-    back.addEventListener("click", () => navigate(SCREEN_HOME));
+    back.addEventListener("click", () => {
+      if (currentScreen === SCREEN_CALENDAR) {
+        currentScreen = SCREEN_FIND_DEALER;
+        selectedStaff = null; staffDetail = null;
+      } else { currentScreen = SCREEN_HOME; }
+      render();
+    });
     back.dataset.bound = "1";
   }
   const mainEl = document.getElementById("main");
   if (!mainEl.dataset.bound) {
-    mainEl.addEventListener("click", (e) => {
+    mainEl.addEventListener("click", async (e) => {
+      // Quick Action 네비
       const navBtn = e.target.closest("[data-nav]");
       if (navBtn) { navigate(navBtn.dataset.nav); return; }
+      // 시프트 탭
       const shiftBtn = e.target.closest("[data-shift]");
       if (shiftBtn) { setShift(shiftBtn.dataset.shift); return; }
+      // 4주 anchor
       const anchorBtn = e.target.closest("[data-anchor-delta]");
-      if (anchorBtn) { moveAnchor(parseInt(anchorBtn.dataset.anchorDelta, 10)); return; }
+      if (anchorBtn) {
+        const delta = parseInt(anchorBtn.dataset.anchorDelta, 10);
+        if (currentScreen === SCREEN_CALENDAR && staffDetail) {
+          if (delta === 0) currentAnchor = mondayOfThisWeek();
+          else currentAnchor = fmtDate(addDays(parseDate(staffDetail.anchor || currentAnchor), delta));
+          try { localStorage.setItem("scheduleApp.anchor", currentAnchor); } catch (e) {}
+          // 캘린더 데이터 다시 fetch
+          openCalendar(selectedStaff.id, selectedStaff.name);
+        } else {
+          moveAnchor(delta);
+        }
+        return;
+      }
+      // staff card
+      const card = e.target.closest("[data-staff-id]");
+      if (card) {
+        openCalendar(card.dataset.staffId, card.dataset.staffName);
+        return;
+      }
+      // calendar cell (admin only — toggle)
+      const cell = e.target.closest("[data-cell-date]");
+      if (cell) {
+        const isAdmin = bootData && bootData.user && bootData.user.isAdmin;
+        if (!isAdmin) return;
+        toggleCell(cell.dataset.cellDate, cell.dataset.cellState);
+        return;
+      }
+      // vacation apply
+      if (e.target.id === "vac-apply") { applyVacationRange(); return; }
     });
     mainEl.dataset.bound = "1";
   }
