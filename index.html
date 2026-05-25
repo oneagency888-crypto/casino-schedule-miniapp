@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Casino Schedule</title>
-<!-- 마이크로 4a: Quick Actions 활성 + placeholder 화면 라우팅 (2026-05-25) -->
+<!-- 마이크로 4b: 시프트 탭 + 4주 네비 (2026-05-25) -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
@@ -49,6 +49,16 @@
   .meta-grid dt { color: var(--hint); }
   .meta-grid dd { margin: 0; word-break: break-all; }
   .placeholder-icon { font-size: 48px; text-align: center; margin: 10px 0; }
+
+  /* 4b: 시프트 탭 + 4주 네비 */
+  .shift-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .shift-tab { background: var(--bg-sec); color: var(--text); border: 1px solid transparent; padding: 10px 8px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; line-height: 1.2; }
+  .shift-tab .sub { display: block; color: var(--hint); font-size: 10px; font-weight: 400; margin-top: 2px; }
+  .shift-tab.active { background: var(--btn); color: var(--btn-text); border-color: var(--btn); }
+  .shift-tab.active .sub { color: var(--btn-text); opacity: 0.85; }
+  .anchor-nav { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 10px; }
+  .anchor-nav .ghost { background: var(--bg-sec); color: var(--text); border: 1px solid transparent; padding: 6px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+  .anchor-nav .range { font-size: 12px; color: var(--hint); flex: 1; text-align: center; min-width: 0; }
 </style>
 </head>
 <body>
@@ -80,17 +90,19 @@ const FETCH_TIMEOUT_MS = 10000;
 const I18N = {
   en: {
     "common.app_title":"Casino Schedule","common.refresh":"Refresh","common.loading":"Loading…",
-    "common.back":"Back",
+    "common.back":"Back","common.today":"Today","common.prev_4w":"◀ Prev 4w","common.next_4w":"Next 4w ▶",
     "home.title":"Home",
     "home.quick_actions":"Quick Actions",
     "home.find_dealer":"Find Dealer","home.vacation_range":"Vacation Range",
     "home.breaks_today":"Breaks today","home.shift_cycle":"Shift Cycle",
     "home.add_staff":"Add Staff","home.backup":"Backup",
+    "home.shift_view":"Shift view","home.4w_range":"4-week range",
     "my.todays_breaks":"Today's Breaks","my.no_breaks_today":"No break assignment today.",
     "my.contact_admin_for_off":"Need a day off? Contact admin.",
     "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
     "state.vacation.full":"Vacation","state.dayoff.full":"Day off","state.pre_practice.full":"Pre-practice","state.special.full":"Special",
     "shift.M.full":"Morning","shift.A.full":"Afternoon","shift.N.full":"Night",
+    "shift.M.time":"07:00–15:00","shift.A.time":"15:00–23:00","shift.N.time":"23:00–07:00 +1d",
     "error.network":"Network error.","error.auth_missing":"Authentication required.",
     "error.auth_invalid":"Invalid signature.","error.auth_expired":"Session expired.",
     "error.not_registered":"Not registered. Contact admin.","error.internal":"Internal error.",
@@ -107,17 +119,19 @@ const I18N = {
   },
   ko: {
     "common.app_title":"카지노 스케줄","common.refresh":"새로고침","common.loading":"불러오는 중…",
-    "common.back":"뒤로",
+    "common.back":"뒤로","common.today":"오늘","common.prev_4w":"◀ 이전 4주","common.next_4w":"다음 4주 ▶",
     "home.title":"홈",
     "home.quick_actions":"빠른 작업",
     "home.find_dealer":"딜러 찾기","home.vacation_range":"휴가 범위",
     "home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 사이클",
     "home.add_staff":"인원 추가","home.backup":"백업",
+    "home.shift_view":"시프트 보기","home.4w_range":"4주 범위",
     "my.todays_breaks":"오늘 내 휴게","my.no_breaks_today":"오늘 휴게 배정 없음.",
     "my.contact_admin_for_off":"휴무가 필요하면 관리자에게 문의하세요.",
     "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
     "state.vacation.full":"휴가","state.dayoff.full":"휴무","state.pre_practice.full":"사전연습","state.special.full":"특별",
     "shift.M.full":"모닝","shift.A.full":"애프터눈","shift.N.full":"나잇",
+    "shift.M.time":"07:00–15:00","shift.A.time":"15:00–23:00","shift.N.time":"23:00–07:00 익일",
     "error.network":"네트워크 오류.","error.auth_missing":"인증이 필요합니다.",
     "error.auth_invalid":"서명이 잘못되었습니다.","error.auth_expired":"세션 만료.",
     "error.not_registered":"등록되지 않은 사용자입니다. 관리자에게 문의하세요.","error.internal":"내부 오류.",
@@ -168,6 +182,25 @@ function escapeHtml(s) {
 }
 
 // ────────────────────────────────────────────────────────────
+// 날짜 유틸 (4b: 4주 anchor 네비)
+// ────────────────────────────────────────────────────────────
+function pad2(n) { return String(n).padStart(2, "0"); }
+function fmtDate(d) { return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()); }
+function parseDate(iso) { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m-1, d); }
+function addDays(d, n) { const r = new Date(d.getFullYear(), d.getMonth(), d.getDate()); r.setDate(r.getDate() + n); return r; }
+function mondayOfThisWeek() {
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  const dow = d.getDay();
+  const offset = (dow === 0) ? -6 : (1 - dow);
+  return fmtDate(addDays(d, offset));
+}
+function rangeLabel(anchorIso) {
+  const start = parseDate(anchorIso);
+  const end = addDays(start, 27);
+  return fmtDate(start) + " ─ " + fmtDate(end);
+}
+
+// ────────────────────────────────────────────────────────────
 // 네트워크
 // ────────────────────────────────────────────────────────────
 async function fetchWithTimeout(url, ms) {
@@ -191,7 +224,7 @@ async function apiCall(action, extraParams) {
 }
 
 // ────────────────────────────────────────────────────────────
-// 라우팅 (단순 클라이언트 상태)
+// 상태 + 라우팅
 // ────────────────────────────────────────────────────────────
 const SCREEN_HOME = "home";
 const PLACEHOLDER_SCREENS = {
@@ -204,20 +237,48 @@ const PLACEHOLDER_SCREENS = {
 };
 
 let currentScreen = SCREEN_HOME;
-let bootData = null;  // ping 응답 data 캐시
+let currentShift = "A";  // localStorage / user.defaultShift / "A" 폴백
+let currentAnchor = mondayOfThisWeek();  // localStorage / 오늘 주의 월요일
+let bootData = null;
 
-function navigate(screen) {
-  currentScreen = screen;
+function navigate(screen) { currentScreen = screen; render(); }
+
+function setShift(shift) {
+  if (shift !== "M" && shift !== "A" && shift !== "N") return;
+  currentShift = shift;
+  try { localStorage.setItem("scheduleApp.shift", shift); } catch (e) {}
   render();
 }
 
+function moveAnchor(days) {
+  if (days === 0) {
+    currentAnchor = mondayOfThisWeek();
+  } else {
+    currentAnchor = fmtDate(addDays(parseDate(currentAnchor), days));
+  }
+  try { localStorage.setItem("scheduleApp.anchor", currentAnchor); } catch (e) {}
+  render();
+}
+
+function loadPersistedState(user) {
+  try {
+    const savedShift = localStorage.getItem("scheduleApp.shift");
+    if (savedShift === "M" || savedShift === "A" || savedShift === "N") currentShift = savedShift;
+    else if (user && user.defaultShift) currentShift = user.defaultShift;
+  } catch (e) {}
+  try {
+    const savedAnchor = localStorage.getItem("scheduleApp.anchor");
+    if (savedAnchor && /^\d{4}-\d{2}-\d{2}$/.test(savedAnchor)) currentAnchor = savedAnchor;
+  } catch (e) {}
+}
+
 function render() {
-  if (!bootData) return;  // 부팅 안 끝남
+  if (!bootData) return;
   const user = bootData.user || {};
   const isAdmin = !!user.isAdmin;
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
 
-  // 헤더 라벨/뒤로 가기 표시
+  // 헤더
   const backBtn = document.getElementById("back-btn");
   const headerTitle = document.getElementById("header-title");
   if (currentScreen === SCREEN_HOME) {
@@ -239,15 +300,37 @@ function render() {
     main.innerHTML = renderAdminHome_(user, name);
   }
 
-  // 첫 렌더 시 로딩 숨김
   document.getElementById("loading").style.display = "none";
   document.getElementById("app").style.display = "block";
+}
+
+function renderShiftAndAnchor_() {
+  return `
+    <div class="card">
+      <h2>${t("home.shift_view")}</h2>
+      <div class="shift-tabs">
+        ${["M", "A", "N"].map(s => `
+          <button class="shift-tab ${currentShift === s ? "active" : ""}" data-shift="${s}">
+            ${t("shift." + s + ".full")}
+            <span class="sub">${t("shift." + s + ".time")}</span>
+          </button>
+        `).join("")}
+      </div>
+      <div class="anchor-nav">
+        <button class="ghost" data-anchor-delta="-28">${t("common.prev_4w")}</button>
+        <span class="range">${escapeHtml(rangeLabel(currentAnchor))}</span>
+        <button class="ghost" data-anchor-delta="0">${t("common.today")}</button>
+        <button class="ghost" data-anchor-delta="28">${t("common.next_4w")}</button>
+      </div>
+    </div>
+  `;
 }
 
 function renderAdminHome_(user, name) {
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
       <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p></div>
+    ${renderShiftAndAnchor_()}
     <div class="card"><h2>${t("boot.legend")}</h2>
       <div class="legend">
         <span class="legend-item"><span class="swatch" style="background:var(--vac)"></span>${t("state.vacation.short")} · ${t("state.vacation.full")}</span>
@@ -297,7 +380,7 @@ function renderPlaceholder_(screen) {
 }
 
 // ────────────────────────────────────────────────────────────
-// 부팅
+// 부팅 + 이벤트
 // ────────────────────────────────────────────────────────────
 async function boot() {
   const tg = window.Telegram && window.Telegram.WebApp;
@@ -316,6 +399,7 @@ async function boot() {
     try { saved = localStorage.getItem("scheduleApp.lang"); } catch (e) {}
     if (!saved && r.lang) setLang(r.lang);
     bootData = r.data;
+    loadPersistedState(bootData.user);
     currentScreen = SCREEN_HOME;
     render();
     bindEvents();
@@ -336,13 +420,15 @@ function bindEvents() {
     back.addEventListener("click", () => navigate(SCREEN_HOME));
     back.dataset.bound = "1";
   }
-  // 본문 내 [data-nav] 위임
   const mainEl = document.getElementById("main");
   if (!mainEl.dataset.bound) {
     mainEl.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-nav]");
-      if (!btn) return;
-      navigate(btn.dataset.nav);
+      const navBtn = e.target.closest("[data-nav]");
+      if (navBtn) { navigate(navBtn.dataset.nav); return; }
+      const shiftBtn = e.target.closest("[data-shift]");
+      if (shiftBtn) { setShift(shiftBtn.dataset.shift); return; }
+      const anchorBtn = e.target.closest("[data-anchor-delta]");
+      if (anchorBtn) { moveAnchor(parseInt(anchorBtn.dataset.anchorDelta, 10)); return; }
     });
     mainEl.dataset.bound = "1";
   }
@@ -369,4 +455,3 @@ document.addEventListener("DOMContentLoaded", boot);
 
 </body>
 </html>
-
