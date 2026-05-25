@@ -121,6 +121,26 @@
   .lock-pill.locked { background: #ffe0b2; color: #b07000; }
   .lock-pill.unlocked { background: #c8e6c9; color: #1a7f37; }
 
+  /* 8단계: Staff Management */
+  .staff-mgmt-card { background: var(--bg); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--bg-sec); }
+  .staff-mgmt-card.inactive { opacity: 0.6; }
+  .staff-mgmt-card .top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .staff-mgmt-card .nm { font-weight: 600; font-size: 14px; }
+  .staff-mgmt-card .meta { color: var(--hint); font-size: 11px; margin-top: 2px; }
+  .staff-mgmt-card .actions { display: flex; gap: 4px; margin-top: 8px; }
+  .staff-mgmt-card .actions .btn { padding: 5px 9px; font-size: 11px; }
+  .staff-mgmt-card .edit-form { display: grid; gap: 6px; margin-top: 8px; }
+  .staff-mgmt-card .edit-form input, .staff-mgmt-card .edit-form select { padding: 6px 8px; border-radius: 5px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 12px; width: 100%; }
+  .staff-mgmt-card .edit-form label { font-size: 11px; color: var(--hint); display: block; margin-bottom: 2px; }
+  .staff-mgmt-card .edit-form .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .staff-mgmt-card .edit-form .actions { margin-top: 8px; }
+  .add-form-card { background: var(--bg); border-radius: 8px; padding: 12px; border: 2px dashed var(--btn); }
+  .add-form-card .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .add-form-card input, .add-form-card select { padding: 8px; border-radius: 6px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 13px; width: 100%; }
+  .add-form-card label { font-size: 11px; color: var(--hint); display: block; margin-bottom: 2px; }
+  .badge-active { background: #c8e6c9; color: #1a7f37; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 700; }
+  .badge-inactive { background: #ffcdd2; color: #c62828; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 700; }
+
   /* 7단계: 본인 화면 */
   .my-breaks-list { display: grid; gap: 6px; margin-top: 8px; }
   .my-break-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg); border-radius: 8px; border-left: 4px solid var(--btn); }
@@ -210,7 +230,19 @@ const I18N = {
     "breaks.hour_offset":"Hour {h}/8","breaks.recompute":"Recompute","breaks.lock":"Lock","breaks.unlock":"Unlock",
     "breaks.locked":"Locked","breaks.unlocked":"Auto","breaks.supervisor_breaks":"Supervisor Breaks (manual)",
     "breaks.no_slots":"(none yet)","breaks.add_slot":"Add","breaks.no_dealers":"No present dealers (under 2). No assignment.",
-    "breaks.confirm_recompute":"Recompute will reset current assignment. Continue?"
+    "breaks.confirm_recompute":"Recompute will reset current assignment. Continue?",
+    "staff.title":"Staff Management","staff.counts":"{active} active · {inactive} inactive",
+    "staff.filter_active":"Active","staff.filter_inactive":"Inactive","staff.filter_all":"All",
+    "staff.search_placeholder":"Search name or ID…",
+    "staff.joined":"Joined {date}","staff.left":"Left {date}",
+    "staff.edit":"Edit","staff.leave":"Leave","staff.restore":"Restore",
+    "staff.save":"Save","staff.cancel":"Cancel",
+    "staff.add_new":"Add new staff","staff.add_btn":"➕ New",
+    "staff.field_name_en":"English name","staff.field_name_ko":"Korean name (optional)",
+    "staff.field_role":"Role","staff.field_shift":"Default shift",
+    "staff.field_join":"Join date","staff.field_telegram":"Telegram ID (optional)",
+    "staff.confirm_leave":"Mark {name} as left today?",
+    "toast.staff_added":"Staff added","toast.staff_updated":"Updated","toast.staff_left":"Marked as left","toast.staff_restored":"Restored"
   },
   ko: {
     "common.app_title":"카지노 스케줄","common.refresh":"새로고침","common.loading":"불러오는 중…",
@@ -264,7 +296,19 @@ const I18N = {
     "breaks.hour_offset":"시간 {h}/8","breaks.recompute":"재계산","breaks.lock":"잠금","breaks.unlock":"잠금 해제",
     "breaks.locked":"잠김","breaks.unlocked":"자동","breaks.supervisor_breaks":"슈퍼 휴게 (수동)",
     "breaks.no_slots":"(없음)","breaks.add_slot":"추가","breaks.no_dealers":"출근 딜러 2명 미만. 배정 없음.",
-    "breaks.confirm_recompute":"재계산하면 현재 배정이 초기화됩니다. 계속할까요?"
+    "breaks.confirm_recompute":"재계산하면 현재 배정이 초기화됩니다. 계속할까요?",
+    "staff.title":"인원 관리","staff.counts":"재직 {active}명 · 비활성 {inactive}명",
+    "staff.filter_active":"재직","staff.filter_inactive":"비활성","staff.filter_all":"전체",
+    "staff.search_placeholder":"이름 또는 ID 검색…",
+    "staff.joined":"입사 {date}","staff.left":"퇴사 {date}",
+    "staff.edit":"편집","staff.leave":"퇴사 처리","staff.restore":"재직 복원",
+    "staff.save":"저장","staff.cancel":"취소",
+    "staff.add_new":"신규 인원 추가","staff.add_btn":"➕ 신규",
+    "staff.field_name_en":"영문 이름","staff.field_name_ko":"한글 이름 (선택)",
+    "staff.field_role":"역할","staff.field_shift":"기본 시프트",
+    "staff.field_join":"입사일","staff.field_telegram":"텔레그램 ID (선택)",
+    "staff.confirm_leave":"{name}을(를) 오늘부로 퇴사 처리할까요?",
+    "toast.staff_added":"인원 추가됨","toast.staff_updated":"갱신됨","toast.staff_left":"퇴사 처리됨","toast.staff_restored":"재직 복원됨"
   }
 };
 
@@ -327,10 +371,10 @@ const SCREEN_FIND_DEALER = "find_dealer";
 const SCREEN_CALENDAR = "calendar";
 const SCREEN_BREAKS = "breaks";
 const SCREEN_MY = "my";
+const SCREEN_STAFF = "staff";
 const PLACEHOLDER_SCREENS = {
   "vacation_range": { emo: "📅", titleKey: "home.vacation_range", descKey: "placeholder.vacation_range.desc", stage: 5 },
-  "shift_cycle":    { emo: "🔄", titleKey: "home.shift_cycle",    descKey: "placeholder.shift_cycle.desc",    stage: 8 },
-  "add_staff":      { emo: "➕", titleKey: "home.add_staff",      descKey: "placeholder.add_staff.desc",      stage: 8 },
+  "shift_cycle":    { emo: "🔄", titleKey: "home.shift_cycle",    descKey: "placeholder.shift_cycle.desc",    stage: 10 },
   "backup":         { emo: "📤", titleKey: "home.backup",         descKey: "placeholder.backup.desc",         stage: 10 }
 };
 
@@ -358,6 +402,14 @@ let breaksHourOffset = 0;
 let myData = null;         // { user, anchor, dayStates, breaksData, nameMap }
 let myLoading = false;
 let myAnchor = mondayOfThisWeek();
+
+// 8단계 상태
+let staffListData = null;  // { items, active, inactive }
+let staffLoading = false;
+let staffFilter = "active";  // "active" | "inactive" | "all"
+let staffSearchQ = "";
+let staffEditingId = null;   // 인라인 편집 중인 emp-id
+let staffAddOpen = false;    // 신규 추가 폼 펼침
 
 function navigate(screen) { currentScreen = screen; render(); }
 
@@ -404,6 +456,7 @@ function render() {
   else if (currentScreen === SCREEN_CALENDAR) title = selectedStaff ? selectedStaff.name : t("home.find_dealer");
   else if (currentScreen === SCREEN_BREAKS) title = t("breaks.title");
   else if (currentScreen === SCREEN_MY) title = t("my.title");
+  else if (currentScreen === SCREEN_STAFF) title = t("staff.title");
   else if (PLACEHOLDER_SCREENS[currentScreen]) title = t(PLACEHOLDER_SCREENS[currentScreen].titleKey);
 
   headerTitle.textContent = title;
@@ -421,6 +474,8 @@ function render() {
     main.innerHTML = renderBreaks_(user);
   } else if (currentScreen === SCREEN_MY) {
     main.innerHTML = renderMy_(user);
+  } else if (currentScreen === SCREEN_STAFF) {
+    main.innerHTML = renderStaff_(user);
   } else if (PLACEHOLDER_SCREENS[currentScreen]) {
     main.innerHTML = renderPlaceholder_(currentScreen);
   } else {
@@ -464,7 +519,7 @@ function renderAdminHome_(user) {
         <button class="btn" data-nav="vacation_range"><span class="emo">📅</span>${t("home.vacation_range")}</button>
         <button class="btn" data-nav="${SCREEN_BREAKS}"><span class="emo">☕</span>${t("home.breaks_today")}</button>
         <button class="btn" data-nav="shift_cycle"><span class="emo">🔄</span>${t("home.shift_cycle")}</button>
-        <button class="btn" data-nav="add_staff"><span class="emo">➕</span>${t("home.add_staff")}</button>
+        <button class="btn" data-nav="${SCREEN_STAFF}"><span class="emo">➕</span>${t("home.add_staff")}</button>
         <button class="btn" data-nav="backup"><span class="emo">📤</span>${t("home.backup")}</button>
       </div></div>`;
 }
@@ -890,6 +945,178 @@ async function moveMyAnchor(days) {
 }
 
 // ────────────────────────────────────────────────────────────
+// 화면 6: Staff Management (8단계)
+// ────────────────────────────────────────────────────────────
+async function openStaffMgmt() {
+  currentScreen = SCREEN_STAFF;
+  staffListData = null; staffEditingId = null; staffAddOpen = false;
+  render();
+  await loadStaffList_();
+}
+
+async function loadStaffList_() {
+  staffLoading = true; render();
+  try {
+    const r = await apiGet("searchStaff", { q: staffSearchQ, shift: "all", category: "all", active: "all", limit: 500 });
+    if (r && r.ok && r.data) {
+      const items = r.data.items || [];
+      const active = items.filter(s => s.active).length;
+      staffListData = { items, active, inactive: items.length - active };
+    } else {
+      showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+    }
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+  staffLoading = false; render();
+}
+
+function renderStaff_(user) {
+  if (staffLoading && !staffListData) return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
+  if (!staffListData) return `<div class="card"><p class="hint">${t("search.no_results")}</p></div>`;
+
+  const filtered = staffListData.items.filter(s => {
+    if (staffFilter === "active" && !s.active) return false;
+    if (staffFilter === "inactive" && s.active) return false;
+    return true;
+  });
+
+  const summary = `<div class="card">
+    <p class="hint">${escapeHtml(t("staff.counts", { active: staffListData.active, inactive: staffListData.inactive }))}</p>
+    <input type="text" id="staff-search" class="search-bar" placeholder="${escapeHtml(t("staff.search_placeholder"))}" value="${escapeHtml(staffSearchQ)}" style="margin-top:8px;">
+    <div class="filter-row">
+      <select id="staff-filter">
+        <option value="active" ${staffFilter==="active"?"selected":""}>${t("staff.filter_active")}</option>
+        <option value="inactive" ${staffFilter==="inactive"?"selected":""}>${t("staff.filter_inactive")}</option>
+        <option value="all" ${staffFilter==="all"?"selected":""}>${t("staff.filter_all")}</option>
+      </select>
+      <button class="btn small" id="staff-add-toggle" style="flex-shrink:0;">${staffAddOpen ? t("staff.cancel") : t("staff.add_btn")}</button>
+    </div>
+  </div>`;
+
+  const addFormHtml = staffAddOpen ? `<div class="card"><div class="add-form-card">
+    <h2 style="margin-top:0;">${t("staff.add_new")}</h2>
+    <div><label>${t("staff.field_name_en")}</label><input type="text" id="new-name-en" placeholder="HARU LIM"></div>
+    <div style="margin-top:6px;"><label>${t("staff.field_name_ko")}</label><input type="text" id="new-name-ko" placeholder="임하루"></div>
+    <div class="row2" style="margin-top:6px;">
+      <div><label>${t("staff.field_role")}</label><select id="new-category"><option value="dealer">${t("search.filter_dealer")}</option><option value="supervisor">${t("search.filter_supervisor")}</option></select></div>
+      <div><label>${t("staff.field_shift")}</label><select id="new-shift"><option value="M">${t("shift.M.full")}</option><option value="A" selected>${t("shift.A.full")}</option><option value="N">${t("shift.N.full")}</option></select></div>
+    </div>
+    <div class="row2" style="margin-top:6px;">
+      <div><label>${t("staff.field_join")}</label><input type="date" id="new-join" value="${todayIso()}"></div>
+      <div><label>${t("staff.field_telegram")}</label><input type="text" id="new-tgid" placeholder="0"></div>
+    </div>
+    <button class="btn" id="new-save" style="margin-top:10px; width:100%;">${t("staff.save")}</button>
+  </div></div>` : "";
+
+  const cards = filtered.length === 0 ? `<p class="hint" style="text-align:center;">${t("search.no_results")}</p>` :
+    filtered.map(s => renderStaffMgmtCard_(s)).join("");
+
+  return summary + addFormHtml + `<div class="card"><div>${cards}</div></div>`;
+}
+
+function renderStaffMgmtCard_(s) {
+  const name = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id);
+  const editing = (staffEditingId === s.id);
+  if (editing) return renderStaffEditForm_(s);
+  const sub = (s.category === "dealer" ? "🃏 " : "🎯 ") + escapeHtml(s.category) + " · " + escapeHtml(t("shift." + s.defaultShift + ".full"));
+  const badge = s.active ? `<span class="badge-active">${t("common.active") || "Active"}</span>` : `<span class="badge-inactive">${t("staff.filter_inactive")}</span>`;
+  return `<div class="staff-mgmt-card ${s.active ? "" : "inactive"}">
+    <div class="top">
+      <div><div class="nm">${escapeHtml(name)} ${badge}</div><div class="meta">${sub} · ID: ${escapeHtml(s.id)}</div></div>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" data-staff-edit="${escapeHtml(s.id)}">${t("staff.edit")}</button>
+      ${s.active
+        ? `<button class="btn ghost" data-staff-leave="${escapeHtml(s.id)}" data-staff-name="${escapeHtml(name)}">${t("staff.leave")}</button>`
+        : `<button class="btn ghost" data-staff-restore="${escapeHtml(s.id)}">${t("staff.restore")}</button>`}
+    </div>
+  </div>`;
+}
+
+function renderStaffEditForm_(s) {
+  return `<div class="staff-mgmt-card">
+    <div class="edit-form">
+      <div><label>${t("staff.field_name_en")}</label><input type="text" data-edit-name-en value="${escapeHtml(s.name_en || "")}"></div>
+      <div><label>${t("staff.field_name_ko")}</label><input type="text" data-edit-name-ko value="${escapeHtml(s.name_ko || "")}"></div>
+      <div class="row2">
+        <div><label>${t("staff.field_role")}</label>
+          <select data-edit-category>
+            <option value="dealer" ${s.category === "dealer" ? "selected" : ""}>${t("search.filter_dealer")}</option>
+            <option value="supervisor" ${s.category === "supervisor" ? "selected" : ""}>${t("search.filter_supervisor")}</option>
+          </select>
+        </div>
+        <div><label>${t("staff.field_shift")}</label>
+          <select data-edit-shift>
+            <option value="M" ${s.defaultShift === "M" ? "selected" : ""}>${t("shift.M.full")}</option>
+            <option value="A" ${s.defaultShift === "A" ? "selected" : ""}>${t("shift.A.full")}</option>
+            <option value="N" ${s.defaultShift === "N" ? "selected" : ""}>${t("shift.N.full")}</option>
+          </select>
+        </div>
+      </div>
+      <div><label>${t("staff.field_telegram")}</label><input type="text" data-edit-tgid value="${escapeHtml(s.telegramUserId || "")}"></div>
+      <div class="actions">
+        <button class="btn" data-staff-save="${escapeHtml(s.id)}">${t("staff.save")}</button>
+        <button class="btn ghost" data-staff-cancel-edit="1">${t("staff.cancel")}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function addStaffSubmit() {
+  const name_en = document.getElementById("new-name-en").value.trim();
+  if (!name_en) { showToast(t("toast.action_failed", { msg: "name_en required" })); return; }
+  const name_ko = document.getElementById("new-name-ko").value.trim();
+  const category = document.getElementById("new-category").value;
+  const defaultShift = document.getElementById("new-shift").value;
+  const joinDate = document.getElementById("new-join").value;
+  const telegramUserId = document.getElementById("new-tgid").value.trim();
+  try {
+    const r = await apiPost("addStaff", { name_en, name_ko, category, defaultShift, joinDate, telegramUserId });
+    if (r && r.ok && r.data) {
+      showToast(t("toast.staff_added"));
+      staffAddOpen = false;
+      await loadStaffList_();
+    } else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+}
+
+async function saveStaffEdit(id) {
+  const card = document.querySelector(`[data-staff-save="${id}"]`).closest(".staff-mgmt-card");
+  const body = {
+    id: id,
+    name_en: card.querySelector("[data-edit-name-en]").value.trim(),
+    name_ko: card.querySelector("[data-edit-name-ko]").value.trim(),
+    category: card.querySelector("[data-edit-category]").value,
+    defaultShift: card.querySelector("[data-edit-shift]").value,
+    telegramUserId: card.querySelector("[data-edit-tgid]").value.trim()
+  };
+  try {
+    const r = await apiPost("updateStaff", body);
+    if (r && r.ok && r.data) {
+      showToast(t("toast.staff_updated"));
+      staffEditingId = null;
+      await loadStaffList_();
+    } else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+}
+
+async function leaveStaff(id, name) {
+  if (!confirm(t("staff.confirm_leave", { name }))) return;
+  try {
+    const r = await apiPost("leaveStaff", { id: id });
+    if (r && r.ok) { showToast(t("toast.staff_left")); await loadStaffList_(); }
+    else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+}
+
+async function restoreStaff(id) {
+  try {
+    const r = await apiPost("updateStaff", { id: id, active: true });
+    if (r && r.ok) { showToast(t("toast.staff_restored")); await loadStaffList_(); }
+    else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+}
+
+// ────────────────────────────────────────────────────────────
 // 부팅 + 이벤트
 // ────────────────────────────────────────────────────────────
 async function boot() {
@@ -932,6 +1159,7 @@ function bindEvents() {
     back.addEventListener("click", () => {
       if (currentScreen === SCREEN_CALENDAR) { currentScreen = SCREEN_FIND_DEALER; selectedStaff = null; staffDetail = null; }
       else if (currentScreen === SCREEN_BREAKS) { currentScreen = SCREEN_HOME; breaksData = null; }
+      else if (currentScreen === SCREEN_STAFF) { currentScreen = SCREEN_HOME; staffListData = null; staffEditingId = null; staffAddOpen = false; }
       else if (currentScreen === SCREEN_MY) {
         // viewer는 뒤로 가도 화면 5 그대로. admin은 홈으로.
         if (bootData && bootData.user && bootData.user.isAdmin) { currentScreen = SCREEN_HOME; myData = null; }
@@ -949,6 +1177,7 @@ function bindEvents() {
       if (navBtn) {
         if (navBtn.dataset.nav === SCREEN_BREAKS) { openBreaks(); return; }
         if (navBtn.dataset.nav === SCREEN_MY) { openMy(); return; }
+        if (navBtn.dataset.nav === SCREEN_STAFF) { openStaffMgmt(); return; }
         navigate(navBtn.dataset.nav); return;
       }
       const shiftBtn = e.target.closest("[data-shift]");
@@ -982,8 +1211,37 @@ function bindEvents() {
       if (addSup) { addSupervisorSlot(addSup.dataset.superAdd); return; }
       const delSup = e.target.closest("[data-super-del]");
       if (delSup) { deleteSupervisorSlot(delSup.dataset.superDel); return; }
+
+      // 8단계 — Staff Management
+      if (e.target.id === "staff-add-toggle") { staffAddOpen = !staffAddOpen; render(); return; }
+      if (e.target.id === "new-save") { addStaffSubmit(); return; }
+      const editBtn = e.target.closest("[data-staff-edit]");
+      if (editBtn) { staffEditingId = editBtn.dataset.staffEdit; render(); return; }
+      if (e.target.dataset && e.target.dataset.staffCancelEdit) { staffEditingId = null; render(); return; }
+      const saveBtn = e.target.closest("[data-staff-save]");
+      if (saveBtn) { saveStaffEdit(saveBtn.dataset.staffSave); return; }
+      const leaveBtn = e.target.closest("[data-staff-leave]");
+      if (leaveBtn) { leaveStaff(leaveBtn.dataset.staffLeave, leaveBtn.dataset.staffName); return; }
+      const restoreBtn = e.target.closest("[data-staff-restore]");
+      if (restoreBtn) { restoreStaff(restoreBtn.dataset.staffRestore); return; }
     });
     mainEl.dataset.bound = "1";
+  }
+
+  // 8단계: 검색/필터 input/change 위임 (별도)
+  const mainEl2 = document.getElementById("main");
+  if (!mainEl2.dataset.bound2) {
+    mainEl2.addEventListener("input", (e) => {
+      if (e.target.id === "staff-search") {
+        staffSearchQ = e.target.value;
+        if (window._staffSearchTid) clearTimeout(window._staffSearchTid);
+        window._staffSearchTid = setTimeout(() => loadStaffList_(), 300);
+      }
+    });
+    mainEl2.addEventListener("change", (e) => {
+      if (e.target.id === "staff-filter") { staffFilter = e.target.value; render(); }
+    });
+    mainEl2.dataset.bound2 = "1";
   }
 }
 
