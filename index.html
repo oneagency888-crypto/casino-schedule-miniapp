@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Casino Schedule — Stage 3a Probe</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root { --bg: var(--tg-theme-bg-color, #ffffff); --text: var(--tg-theme-text-color, #1f2328); --hint: var(--tg-theme-hint-color, #6e7781); --bg-sec: var(--tg-theme-secondary-bg-color, #f4f4f5); }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; padding: 14px; line-height: 1.5; background: var(--bg); color: var(--text); margin: 0; font-size: 14px; }
+h1 { font-size: 16px; margin: 0 0 12px; }
+.box { background: var(--bg-sec); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+.box h3 { margin: 0 0 6px; font-size: 13px; }
+.box pre { margin: 0; white-space: pre-wrap; word-break: break-all; font-family: "Consolas", "Menlo", monospace; font-size: 11px; line-height: 1.4; }
+.status-ok { color: #1a7f37; font-weight: 700; }
+.status-warn { color: #b07000; font-weight: 700; }
+.status-err { color: #c74040; font-weight: 700; }
+.footer { color: var(--hint); font-size: 11px; margin-top: 10px; text-align: center; }
+</style>
+</head>
+<body>
+<h1>Casino Schedule — Stage 3a Probe</h1>
+<div class="box"><h3>1. API_BASE</h3><pre id="api-base">…</pre></div>
+<div class="box"><h3>2. Telegram WebApp SDK 상태</h3><pre id="sdk-state">진단 중…</pre></div>
+<div class="box"><h3>3. fetch ping (10초 timeout)</h3><pre id="fetch-state">대기 중…</pre></div>
+<div class="footer">3a 진단 — i18n / 카드 / 버튼은 3b에서 추가</div>
+<script>
+"use strict";
+const API_BASE = "https://script.google.com/macros/s/AKfycbybll_0YVphugr4SS2-maVtKTJ1uIf8aRJheAMBLU9UkZAqAXjrFDRXjwqqbaGAQNhA/exec";
+const FETCH_TIMEOUT_MS = 10000;
+document.getElementById("api-base").textContent = API_BASE;
+
+function diagnoseSDK() {
+  const el = document.getElementById("sdk-state");
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (!tg) {
+    el.innerHTML = '<span class="status-err">❌ SDK 미로드</span>\nwindow.Telegram.WebApp 가 undefined입니다.\n원인: telegram-web-app.js 차단 또는 외부 브라우저에서 직접 열림';
+    return null;
+  }
+  try { tg.ready(); tg.expand(); } catch (e) {}
+  const info = {
+    hasTg: true,
+    initDataLen: tg.initData ? tg.initData.length : 0,
+    initDataPreview: tg.initData ? (tg.initData.substring(0, 80) + (tg.initData.length > 80 ? "…" : "")) : "(empty)",
+    hasInitDataUnsafe: !!tg.initDataUnsafe,
+    userId: (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "(none)",
+    platform: tg.platform || "(none)",
+    version: tg.version || "(none)",
+    colorScheme: tg.colorScheme || "(none)"
+  };
+  let banner;
+  if (info.initDataLen > 0 && info.userId !== "(none)") banner = '<span class="status-ok">✅ SDK 로드 + initData 정상</span>\n';
+  else if (info.hasInitDataUnsafe) banner = '<span class="status-warn">⚠ SDK 로드 OK · initData 비어 있음</span>\n외부 브라우저(텔레그램 아님) 또는 봇이 정식 미니앱으로 인식 안 됨.\n';
+  else banner = '<span class="status-warn">⚠ SDK 로드 OK · initDataUnsafe 없음</span>\n';
+  el.innerHTML = banner + JSON.stringify(info, null, 2);
+  return tg;
+}
+
+async function fetchWithTimeout(url, ms) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { signal: controller.signal, method: "GET", redirect: "follow", mode: "cors", credentials: "omit" });
+  } finally { clearTimeout(tid); }
+}
+
+async function probeFetch(tg) {
+  const el = document.getElementById("fetch-state");
+  el.textContent = "fetch 중… (최대 " + (FETCH_TIMEOUT_MS / 1000) + "초 대기)";
+  const initData = (tg && tg.initData) || "";
+  const params = new URLSearchParams();
+  params.set("action", "ping");
+  if (initData) params.set("initData", initData);
+  const url = API_BASE + "?" + params.toString();
+  try {
+    const t0 = Date.now();
+    const res = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
+    const dt = Date.now() - t0;
+    const text = await res.text();
+    let banner;
+    if (text.indexOf('"ok":true') >= 0) banner = '<span class="status-ok">✅ ping OK — 인증 통과 (' + dt + 'ms)</span>\n';
+    else if (text.indexOf('AUTH_MISSING') >= 0) banner = '<span class="status-warn">⚠ AUTH_MISSING — initData 없음 (외부 브라우저 정상)</span>\n응답 시간: ' + dt + 'ms\n';
+    else if (text.indexOf('AUTH_INVALID') >= 0) banner = '<span class="status-err">❌ AUTH_INVALID — HMAC 서명 검증 실패</span>\n응답 시간: ' + dt + 'ms\n';
+    else if (res.ok) banner = '<span class="status-warn">⚠ HTTP ' + res.status + ' — 예상 외 응답</span>\n응답 시간: ' + dt + 'ms\n';
+    else banner = '<span class="status-err">❌ HTTP ' + res.status + '</span>\n';
+    const preview = text.length > 600 ? text.substring(0, 600) + "…(truncated)" : text;
+    el.innerHTML = banner + "\n응답 (" + text.length + "자):\n" + preview;
+  } catch (err) {
+    if (err && err.name === "AbortError") {
+      el.innerHTML = '<span class="status-err">❌ TIMEOUT — ' + (FETCH_TIMEOUT_MS / 1000) + '초 안에 응답 없음</span>\n원인: 네트워크 차단, sandbox iframe, Apps Script hang.';
+    } else {
+      el.innerHTML = '<span class="status-err">❌ fetch 실패</span>\n' + (err && err.message ? err.message : String(err));
+    }
+  }
+}
+
+(async function main() {
+  const tg = diagnoseSDK();
+  await probeFetch(tg);
+})();
+</script>
+</body>
+</html>
