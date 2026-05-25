@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Casino Schedule</title>
-<!-- 6단계: 화면 4 Breaks (자동 휴게 + 시간축 펼침 + 슈퍼 수동) (2026-05-25) -->
+<!-- 7단계: 화면 5 본인 화면 (Today's Breaks + 본인 4주 캘린더 read-only) (2026-05-25) -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
@@ -96,8 +95,6 @@
   .vacation-form .apply-row .btn { flex: 1; }
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 18px; border-radius: 18px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.25s; pointer-events: none; max-width: 90%; text-align: center; }
   .toast.show { opacity: 1; }
-
-  /* 6단계: Breaks */
   .breaks-summary { font-size: 12px; color: var(--hint); margin-bottom: 8px; }
   .breaks-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
   .break-group { background: var(--bg); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 4px solid var(--triple); }
@@ -123,6 +120,16 @@
   .lock-pill { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
   .lock-pill.locked { background: #ffe0b2; color: #b07000; }
   .lock-pill.unlocked { background: #c8e6c9; color: #1a7f37; }
+
+  /* 7단계: 본인 화면 */
+  .my-breaks-list { display: grid; gap: 6px; margin-top: 8px; }
+  .my-break-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg); border-radius: 8px; border-left: 4px solid var(--btn); }
+  .my-break-row.first { border-left-color: #1a7f37; }
+  .my-break-row .clock { font-size: 18px; }
+  .my-break-row .time { font-family: monospace; font-weight: 700; font-size: 16px; color: var(--btn); min-width: 70px; }
+  .my-break-row .label { font-size: 11px; color: var(--hint); flex: 1; }
+  .my-group-info { font-size: 12px; color: var(--hint); padding: 8px 0 0; }
+  .my-group-info b { color: var(--text); }
 </style>
 </head>
 <body>
@@ -159,9 +166,11 @@ const I18N = {
     "home.find_dealer":"Find Dealer","home.vacation_range":"Vacation Range",
     "home.breaks_today":"Breaks today","home.shift_cycle":"Shift Cycle",
     "home.add_staff":"Add Staff","home.backup":"Backup",
-    "home.shift_view":"Shift view",
-    "my.todays_breaks":"Today's Breaks","my.no_breaks_today":"No break assignment today.",
+    "home.shift_view":"Shift view","home.my_view":"My View",
+    "my.title":"My View","my.todays_breaks":"Today's Breaks","my.no_breaks_today":"No break assignment today (off/vacation).",
     "my.contact_admin_for_off":"Need a day off? Contact admin.",
+    "my.first_break":"first break","my.schedule_4w":"My Schedule · 4 weeks",
+    "my.group_with":"Group: {type} with {names}","my.group_alone":"Group: {type} (alone)",
     "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
     "state.vacation.full":"Vacation","state.dayoff.full":"Day off","state.pre_practice.full":"Pre-practice","state.special.full":"Special",
     "state.work.full":"Working",
@@ -197,15 +206,10 @@ const I18N = {
     "breaks.title":"Breaks","breaks.header":"{shift} · {date}",
     "breaks.dealers_active":"{n} dealers active","breaks.dealer_breaks":"Dealer Breaks (auto)",
     "breaks.summary":"{triples} triple + {pairs} pair = {total} dealers",
-    "breaks.group_triple":"Group {n} (triple, 20-min cycle)",
-    "breaks.group_pair":"Group {n} (pair, 30-min cycle)",
-    "breaks.hour_offset":"Hour {h}/8",
-    "breaks.recompute":"Recompute","breaks.lock":"Lock","breaks.unlock":"Unlock",
-    "breaks.locked":"Locked","breaks.unlocked":"Auto",
-    "breaks.supervisor_breaks":"Supervisor Breaks (manual)",
-    "breaks.no_slots":"(none yet)",
-    "breaks.add_slot":"Add",
-    "breaks.no_dealers":"No present dealers (under 2). No assignment.",
+    "breaks.group_triple":"Group {n} (triple, 20-min cycle)","breaks.group_pair":"Group {n} (pair, 30-min cycle)",
+    "breaks.hour_offset":"Hour {h}/8","breaks.recompute":"Recompute","breaks.lock":"Lock","breaks.unlock":"Unlock",
+    "breaks.locked":"Locked","breaks.unlocked":"Auto","breaks.supervisor_breaks":"Supervisor Breaks (manual)",
+    "breaks.no_slots":"(none yet)","breaks.add_slot":"Add","breaks.no_dealers":"No present dealers (under 2). No assignment.",
     "breaks.confirm_recompute":"Recompute will reset current assignment. Continue?"
   },
   ko: {
@@ -216,9 +220,11 @@ const I18N = {
     "home.find_dealer":"딜러 찾기","home.vacation_range":"휴가 범위",
     "home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 사이클",
     "home.add_staff":"인원 추가","home.backup":"백업",
-    "home.shift_view":"시프트 보기",
-    "my.todays_breaks":"오늘 내 휴게","my.no_breaks_today":"오늘 휴게 배정 없음.",
+    "home.shift_view":"시프트 보기","home.my_view":"내 휴게 보기",
+    "my.title":"내 휴게","my.todays_breaks":"오늘 내 휴게","my.no_breaks_today":"오늘 휴게 배정 없음 (휴무/휴가).",
     "my.contact_admin_for_off":"휴무가 필요하면 관리자에게 문의하세요.",
+    "my.first_break":"첫 휴게","my.schedule_4w":"내 스케줄 · 4주",
+    "my.group_with":"묶음: {type} — {names}와 함께","my.group_alone":"묶음: {type} (혼자)",
     "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
     "state.vacation.full":"휴가","state.dayoff.full":"휴무","state.pre_practice.full":"사전연습","state.special.full":"특별",
     "state.work.full":"출근",
@@ -254,15 +260,10 @@ const I18N = {
     "breaks.title":"휴게","breaks.header":"{shift} · {date}",
     "breaks.dealers_active":"출근 딜러 {n}명","breaks.dealer_breaks":"딜러 휴게 (자동)",
     "breaks.summary":"triple {triples} + pair {pairs} = {total}명",
-    "breaks.group_triple":"묶음 {n} (3인, 20분 순환)",
-    "breaks.group_pair":"묶음 {n} (2인, 30분 순환)",
-    "breaks.hour_offset":"시간 {h}/8",
-    "breaks.recompute":"재계산","breaks.lock":"잠금","breaks.unlock":"잠금 해제",
-    "breaks.locked":"잠김","breaks.unlocked":"자동",
-    "breaks.supervisor_breaks":"슈퍼 휴게 (수동)",
-    "breaks.no_slots":"(없음)",
-    "breaks.add_slot":"추가",
-    "breaks.no_dealers":"출근 딜러 2명 미만. 배정 없음.",
+    "breaks.group_triple":"묶음 {n} (3인, 20분 순환)","breaks.group_pair":"묶음 {n} (2인, 30분 순환)",
+    "breaks.hour_offset":"시간 {h}/8","breaks.recompute":"재계산","breaks.lock":"잠금","breaks.unlock":"잠금 해제",
+    "breaks.locked":"잠김","breaks.unlocked":"자동","breaks.supervisor_breaks":"슈퍼 휴게 (수동)",
+    "breaks.no_slots":"(없음)","breaks.add_slot":"추가","breaks.no_dealers":"출근 딜러 2명 미만. 배정 없음.",
     "breaks.confirm_recompute":"재계산하면 현재 배정이 초기화됩니다. 계속할까요?"
   }
 };
@@ -325,6 +326,7 @@ const SCREEN_HOME = "home";
 const SCREEN_FIND_DEALER = "find_dealer";
 const SCREEN_CALENDAR = "calendar";
 const SCREEN_BREAKS = "breaks";
+const SCREEN_MY = "my";
 const PLACEHOLDER_SCREENS = {
   "vacation_range": { emo: "📅", titleKey: "home.vacation_range", descKey: "placeholder.vacation_range.desc", stage: 5 },
   "shift_cycle":    { emo: "🔄", titleKey: "home.shift_cycle",    descKey: "placeholder.shift_cycle.desc",    stage: 8 },
@@ -337,7 +339,6 @@ let currentShift = "A";
 let currentAnchor = mondayOfThisWeek();
 let bootData = null;
 
-// 5단계 상태
 let searchQuery = "";
 let searchFilters = { shift: "all", category: "all", active: "true" };
 let searchResults = [];
@@ -347,12 +348,16 @@ let searchDebounceTid = null;
 let selectedStaff = null;
 let staffDetail = null;
 
-// 6단계 상태
-let breaksData = null;       // { date, shift, groups, supervisors, supervisorBreaks, locked, presentDealerCount, shiftStartTime }
+let breaksData = null;
 let breaksLoading = false;
 let breaksDate = todayIso();
 let breaksShift = "A";
-let breaksHourOffset = 0;    // 0..7 (시간축 펼침)
+let breaksHourOffset = 0;
+
+// 7단계 상태
+let myData = null;         // { user, anchor, dayStates, breaksData, nameMap }
+let myLoading = false;
+let myAnchor = mondayOfThisWeek();
 
 function navigate(screen) { currentScreen = screen; render(); }
 
@@ -382,9 +387,6 @@ function loadPersistedState(user) {
   } catch (e) {}
 }
 
-// ────────────────────────────────────────────────────────────
-// 메인 렌더
-// ────────────────────────────────────────────────────────────
 function render() {
   if (!bootData) return;
   const user = bootData.user || {};
@@ -395,11 +397,13 @@ function render() {
   let title = t("common.app_title");
 
   if (currentScreen === SCREEN_HOME) backBtn.style.display = "none";
-  else { backBtn.style.display = "inline-block"; }
+  else if (currentScreen === SCREEN_MY && !isAdmin) backBtn.style.display = "none";  // viewer 기본 화면
+  else backBtn.style.display = "inline-block";
 
   if (currentScreen === SCREEN_FIND_DEALER) title = t("home.find_dealer");
   else if (currentScreen === SCREEN_CALENDAR) title = selectedStaff ? selectedStaff.name : t("home.find_dealer");
   else if (currentScreen === SCREEN_BREAKS) title = t("breaks.title");
+  else if (currentScreen === SCREEN_MY) title = t("my.title");
   else if (PLACEHOLDER_SCREENS[currentScreen]) title = t(PLACEHOLDER_SCREENS[currentScreen].titleKey);
 
   headerTitle.textContent = title;
@@ -415,6 +419,8 @@ function render() {
     main.innerHTML = renderCalendar_(user);
   } else if (currentScreen === SCREEN_BREAKS) {
     main.innerHTML = renderBreaks_(user);
+  } else if (currentScreen === SCREEN_MY) {
+    main.innerHTML = renderMy_(user);
   } else if (PLACEHOLDER_SCREENS[currentScreen]) {
     main.innerHTML = renderPlaceholder_(currentScreen);
   } else {
@@ -427,28 +433,23 @@ function render() {
 
 function renderShiftAndAnchor_() {
   return `
-    <div class="card">
-      <h2>${t("home.shift_view")}</h2>
-      <div class="shift-tabs">
-        ${["M","A","N"].map(s => `
-          <button class="shift-tab ${currentShift === s ? "active" : ""}" data-shift="${s}">
-            ${t("shift." + s + ".full")}<span class="sub">${t("shift." + s + ".time")}</span>
-          </button>`).join("")}
-      </div>
+    <div class="card"><h2>${t("home.shift_view")}</h2>
+      <div class="shift-tabs">${["M","A","N"].map(s => `<button class="shift-tab ${currentShift === s ? "active" : ""}" data-shift="${s}">${t("shift." + s + ".full")}<span class="sub">${t("shift." + s + ".time")}</span></button>`).join("")}</div>
       <div class="anchor-nav">
         <button class="ghost" data-anchor-delta="-28">${t("common.prev_4w")}</button>
         <span class="range">${escapeHtml(rangeLabel(currentAnchor))}</span>
         <button class="ghost" data-anchor-delta="0">${t("common.today")}</button>
         <button class="ghost" data-anchor-delta="28">${t("common.next_4w")}</button>
-      </div>
-    </div>`;
+      </div></div>`;
 }
 
 function renderAdminHome_(user) {
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
-      <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p></div>
+      <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p>
+      <button class="btn ghost small" data-nav="${SCREEN_MY}" style="margin-top:8px;">👁 ${t("home.my_view")}</button>
+    </div>
     ${renderShiftAndAnchor_()}
     <div class="card"><h2>${t("boot.legend")}</h2>
       <div class="legend">
@@ -473,8 +474,8 @@ function renderViewerHome_(user) {
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_viewer", { name }))}</h2>
       <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_viewer"))}</p></div>
-    <div class="card"><h2>${t("my.todays_breaks")}</h2><p class="hint">${t("my.no_breaks_today")}</p></div>
-    <div class="card"><button class="btn" data-nav="${SCREEN_FIND_DEALER}" style="width:100%;">👤 ${t("home.find_dealer")}</button></div>
+    <div class="card"><button class="btn" data-nav="${SCREEN_MY}" style="width:100%;">👁 ${t("home.my_view")}</button></div>
+    <div class="card"><button class="btn ghost" data-nav="${SCREEN_FIND_DEALER}" style="width:100%;">👤 ${t("home.find_dealer")}</button></div>
     <div class="card"><p class="hint">${t("my.contact_admin_for_off")}</p></div>`;
 }
 
@@ -487,20 +488,19 @@ function renderPlaceholder_(screen) {
 }
 
 // ────────────────────────────────────────────────────────────
-// 화면 2: Find Dealer
+// 화면 2~3: Find Dealer + Calendar (5단계)
 // ────────────────────────────────────────────────────────────
 function renderFindDealer_() {
-  return `
-    <div class="card">
-      <input type="text" id="search-q" class="search-bar" placeholder="${escapeHtml(t("search.placeholder"))}" value="${escapeHtml(searchQuery)}">
-      <div class="filter-row">
-        <select id="filter-shift"><option value="all">${t("search.filter_all_shifts")}</option><option value="M">${t("shift.M.full")}</option><option value="A">${t("shift.A.full")}</option><option value="N">${t("shift.N.full")}</option></select>
-        <select id="filter-category"><option value="all">${t("search.filter_all_cat")}</option><option value="dealer">${t("search.filter_dealer")}</option><option value="supervisor">${t("search.filter_supervisor")}</option></select>
-        <select id="filter-active"><option value="true">${t("search.filter_active")}</option><option value="false">${t("search.filter_inactive")}</option><option value="all">${t("search.filter_all_shifts")}</option></select>
-      </div>
-      <div class="result-count" id="result-count">${searchLoading ? t("common.loading") : ""}</div>
-      <div id="search-results">${searchResults.length === 0 && !searchLoading ? `<p class="hint" style="text-align:center;">${t("search.no_results")}</p>` : ""}${searchResults.map(s => renderStaffCard_(s)).join("")}</div>
-    </div>`;
+  return `<div class="card">
+    <input type="text" id="search-q" class="search-bar" placeholder="${escapeHtml(t("search.placeholder"))}" value="${escapeHtml(searchQuery)}">
+    <div class="filter-row">
+      <select id="filter-shift"><option value="all">${t("search.filter_all_shifts")}</option><option value="M">${t("shift.M.full")}</option><option value="A">${t("shift.A.full")}</option><option value="N">${t("shift.N.full")}</option></select>
+      <select id="filter-category"><option value="all">${t("search.filter_all_cat")}</option><option value="dealer">${t("search.filter_dealer")}</option><option value="supervisor">${t("search.filter_supervisor")}</option></select>
+      <select id="filter-active"><option value="true">${t("search.filter_active")}</option><option value="false">${t("search.filter_inactive")}</option><option value="all">${t("search.filter_all_shifts")}</option></select>
+    </div>
+    <div class="result-count" id="result-count">${searchLoading ? t("common.loading") : ""}</div>
+    <div id="search-results">${searchResults.length === 0 && !searchLoading ? `<p class="hint" style="text-align:center;">${t("search.no_results")}</p>` : ""}${searchResults.map(s => renderStaffCard_(s)).join("")}</div>
+  </div>`;
 }
 
 function bindSearchInput() {
@@ -545,9 +545,6 @@ function renderStaffCard_(s) {
   return `<div class="staff-card" data-staff-id="${escapeHtml(s.id)}" data-staff-name="${escapeHtml(name)}"><div class="avatar">👤</div><div class="body"><div class="name">${escapeHtml(name)}</div><div class="sub">${sub}</div></div>${statusHtml}</div>`;
 }
 
-// ────────────────────────────────────────────────────────────
-// 화면 3: Dealer Calendar
-// ────────────────────────────────────────────────────────────
 async function openCalendar(staffId, staffName) {
   selectedStaff = { id: staffId, name: staffName };
   currentScreen = SCREEN_CALENDAR; staffDetail = null; render();
@@ -586,29 +583,15 @@ function renderCalendar_(user) {
     const lblText = d.state === "vacation" ? t("state.vacation.short") : d.state === "dayoff" ? t("state.dayoff.short") : d.state === "pre_practice" ? t("state.pre_practice.short") : d.state === "special" ? t("state.special.short") : "";
     return `<div class="${cls.join(" ")}" data-cell-date="${d.iso}" data-cell-state="${d.state}"><span class="d">${d.day}</span>${lblText?`<span class="lbl">${lblText}</span>`:""}</div>`;
   }).join("");
-
   const vacForm = isAdmin ? `<div class="card"><h2>${t("calendar.set_vacation_range")}</h2>
     <div class="vacation-form">
       <div><label>${t("calendar.from")}</label><input type="date" id="vac-from" value="${anchorIso}"></div>
       <div><label>${t("calendar.to")}</label><input type="date" id="vac-to" value="${fmtDate(addDays(parseDate(anchorIso), 4))}"></div>
       <div class="apply-row"><button class="btn" id="vac-apply">${t("calendar.apply_vacation")}</button></div>
     </div>
-    <p class="hint" style="margin-top:8px;">${t("calendar.cell_help")}</p></div>`
-   : `<div class="card"><p class="hint">${t("calendar.viewer_locked")}</p></div>`;
-
+    <p class="hint" style="margin-top:8px;">${t("calendar.cell_help")}</p></div>` : `<div class="card"><p class="hint">${t("calendar.viewer_locked")}</p></div>`;
   const loadingHtml = !staffDetail ? `<div class="card"><p class="hint">${t("common.loading")}</p></div>` : "";
-
-  return `
-    <div class="card"><h2>${escapeHtml(selectedStaff.name)}</h2><p class="hint">${escapeHtml(empCategory)} · ${empShift ? escapeHtml(t("shift." + empShift + ".full")) : ""}</p></div>
-    ${loadingHtml}
-    ${staffDetail ? `<div class="card">
-      <div class="anchor-nav" style="margin-bottom:8px;">
-        <button class="ghost" data-anchor-delta="-28">${t("common.prev_4w")}</button>
-        <span class="range">${escapeHtml(rangeLabel(anchorIso))}</span>
-        <button class="ghost" data-anchor-delta="0">${t("common.today")}</button>
-        <button class="ghost" data-anchor-delta="28">${t("common.next_4w")}</button>
-      </div>
-      <div class="calendar">${dowHeader}${cells}</div></div>${vacForm}` : ""}`;
+  return `<div class="card"><h2>${escapeHtml(selectedStaff.name)}</h2><p class="hint">${escapeHtml(empCategory)} · ${empShift ? escapeHtml(t("shift." + empShift + ".full")) : ""}</p></div>${loadingHtml}${staffDetail ? `<div class="card"><div class="anchor-nav" style="margin-bottom:8px;"><button class="ghost" data-anchor-delta="-28">${t("common.prev_4w")}</button><span class="range">${escapeHtml(rangeLabel(anchorIso))}</span><button class="ghost" data-anchor-delta="0">${t("common.today")}</button><button class="ghost" data-anchor-delta="28">${t("common.next_4w")}</button></div><div class="calendar">${dowHeader}${cells}</div></div>${vacForm}` : ""}`;
 }
 
 async function toggleCell(date, currentState) {
@@ -649,12 +632,8 @@ async function applyVacationRange() {
 // 화면 4: Breaks (6단계)
 // ────────────────────────────────────────────────────────────
 async function openBreaks() {
-  currentScreen = SCREEN_BREAKS;
-  breaksDate = todayIso();
-  breaksShift = currentShift;  // 홈에서 선택한 시프트 가져옴
-  breaksHourOffset = 0;
-  breaksData = null; breaksLoading = true;
-  render();
+  currentScreen = SCREEN_BREAKS; breaksDate = todayIso(); breaksShift = currentShift; breaksHourOffset = 0;
+  breaksData = null; breaksLoading = true; render();
   await loadBreaks_();
 }
 
@@ -672,36 +651,19 @@ function renderBreaks_(user) {
   const isAdmin = !!user.isAdmin;
   if (breaksLoading && !breaksData) return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
   if (!breaksData) return `<div class="card"><p class="hint">${t("search.no_results")}</p></div>`;
-
   const groups = breaksData.groups || [];
   const triples = groups.filter(g => g.type === "triple").length;
   const pairs = groups.filter(g => g.type === "pair").length;
   const total = triples * 3 + pairs * 2;
-
-  // 시프트 탭 — 화면 4 안에서도 시프트 전환 가능
   const shiftTabHtml = `<div class="card"><h2>${t("breaks.title")}</h2>
-    <div class="shift-tabs">${["M","A","N"].map(s => `
-      <button class="shift-tab ${breaksShift === s ? "active" : ""}" data-break-shift="${s}">
-        ${t("shift." + s + ".full")}<span class="sub">${t("shift." + s + ".time")}</span>
-      </button>`).join("")}
-    </div>
+    <div class="shift-tabs">${["M","A","N"].map(s => `<button class="shift-tab ${breaksShift === s ? "active" : ""}" data-break-shift="${s}">${t("shift." + s + ".full")}<span class="sub">${t("shift." + s + ".time")}</span></button>`).join("")}</div>
     <p class="breaks-summary">${escapeHtml(t("breaks.header", { shift: t("shift." + breaksShift + ".full"), date: breaksDate }))} · ${escapeHtml(t("breaks.dealers_active", { n: breaksData.presentDealerCount || 0 }))}</p>
-    <p class="hint">${escapeHtml(t("breaks.summary", { triples: triples, pairs: pairs, total: total }))}
-      &nbsp;<span class="lock-pill ${breaksData.locked ? "locked" : "unlocked"}">${breaksData.locked ? "🔒 " + t("breaks.locked") : "🔓 " + t("breaks.unlocked")}</span></p>
-    ${isAdmin ? `<div class="breaks-actions">
-      <button class="btn ghost small" id="breaks-recompute" ${breaksData.locked ? "disabled" : ""}>${t("breaks.recompute")}</button>
-      <button class="btn ghost small" id="breaks-lock-toggle">${breaksData.locked ? t("breaks.unlock") : t("breaks.lock")}</button>
-    </div>` : ""}
+    <p class="hint">${escapeHtml(t("breaks.summary", { triples, pairs, total }))} &nbsp;<span class="lock-pill ${breaksData.locked ? "locked" : "unlocked"}">${breaksData.locked ? "🔒 " + t("breaks.locked") : "🔓 " + t("breaks.unlocked")}</span></p>
+    ${isAdmin ? `<div class="breaks-actions"><button class="btn ghost small" id="breaks-recompute" ${breaksData.locked ? "disabled" : ""}>${t("breaks.recompute")}</button><button class="btn ghost small" id="breaks-lock-toggle">${breaksData.locked ? t("breaks.unlock") : t("breaks.lock")}</button></div>` : ""}
   </div>`;
-
-  // 시간축 펼침 칩 (0..7)
   const hourChips = `<div class="hours-strip">${[0,1,2,3,4,5,6,7].map(h => `<span class="hour-chip ${breaksHourOffset === h ? "active" : ""}" data-hour-offset="${h}">${escapeHtml(t("breaks.hour_offset", { h: h+1 }))}</span>`).join("")}</div>`;
-
-  // 그룹 카드
   const empIdToName = {};
-  // 출근 딜러 이름을 따로 가져올 수단이 없어서 슬롯에서 id 그대로 표시. 5단계 캐시(searchResults)에 있으면 활용.
   searchResults.forEach(s => { empIdToName[s.id] = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id); });
-
   const groupsHtml = groups.length === 0 ? `<p class="hint">${t("breaks.no_dealers")}</p>` :
     groups.map((g, i) => {
       const titleKey = g.type === "triple" ? "breaks.group_triple" : "breaks.group_pair";
@@ -709,40 +671,26 @@ function renderBreaks_(user) {
       const rows = slotKeys.map(k => {
         const empId = g.slots[k];
         const name = empIdToName[empId] || empId || "(empty)";
-        const t = computeSlotTime_(breaksData.shiftStartTime, k, breaksHourOffset, breaksShift);
-        return `<div class="row"><span class="time">${escapeHtml(t)}</span><span class="nm">${escapeHtml(name)}</span></div>`;
+        const tm = computeSlotTime_(breaksData.shiftStartTime, k, breaksHourOffset, breaksShift);
+        return `<div class="row"><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(name)}</span></div>`;
       }).join("");
       return `<div class="break-group ${g.type === "pair" ? "pair" : ""}"><div class="gh">${escapeHtml(t(titleKey, { n: i + 1 }))}</div><div class="break-slots">${rows}</div></div>`;
     }).join("");
-
   const dealerBreaksHtml = `<div class="card"><h2>${t("breaks.dealer_breaks")}</h2>${hourChips}${groupsHtml}</div>`;
-
-  // 슈퍼바이저 휴게
   const sbsByEmp = {};
   (breaksData.supervisorBreaks || []).forEach(b => { if (!sbsByEmp[b.supervisorId]) sbsByEmp[b.supervisorId] = []; sbsByEmp[b.supervisorId].push(b); });
-
   const supervisorCards = (breaksData.supervisors || []).filter(s => s.defaultShift === breaksShift).map(s => {
     const myBreaks = sbsByEmp[s.id] || [];
     const name = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id);
     const chips = myBreaks.length === 0 ? `<span class="hint" style="font-size:11px;">${t("breaks.no_slots")}</span>` :
       myBreaks.map(b => `<span class="super-chip">${escapeHtml(b.time)} · ${escapeHtml(String(b.minutes))}m${isAdmin ? `<span class="del" data-super-del="${escapeHtml(b.id)}">×</span>` : ""}</span>`).join("");
-    return `<div class="super-card"><div class="sn">${escapeHtml(name)}</div><div class="super-chips">${chips}</div>
-      ${isAdmin ? `<div class="super-add">
-        <input type="time" data-super-time="${escapeHtml(s.id)}" value="">
-        <input type="number" data-super-min="${escapeHtml(s.id)}" value="10" min="5" max="240" step="5">
-        <span class="hint" style="font-size:11px;">m</span>
-        <button data-super-add="${escapeHtml(s.id)}">${t("breaks.add_slot")}</button>
-      </div>` : ""}</div>`;
+    return `<div class="super-card"><div class="sn">${escapeHtml(name)}</div><div class="super-chips">${chips}</div>${isAdmin ? `<div class="super-add"><input type="time" data-super-time="${escapeHtml(s.id)}" value=""><input type="number" data-super-min="${escapeHtml(s.id)}" value="10" min="5" max="240" step="5"><span class="hint" style="font-size:11px;">m</span><button data-super-add="${escapeHtml(s.id)}">${t("breaks.add_slot")}</button></div>` : ""}</div>`;
   }).join("");
-
   const supervisorHtml = `<div class="card"><h2>${t("breaks.supervisor_breaks")}</h2>${supervisorCards || `<p class="hint">${t("breaks.no_slots")}</p>`}</div>`;
-
   return shiftTabHtml + dealerBreaksHtml + supervisorHtml;
 }
 
-// 시프트 시작 + slotKey + hourOffset → 절대 시각 (예: 15:00 + "20" + 2 → 17:20)
 function computeSlotTime_(shiftStart, slotKey, hourOffset, shift) {
-  // shiftStart: "HH:MM"
   const [hh, mm] = String(shiftStart || "00:00").split(":").map(Number);
   const slotMin = parseInt(slotKey, 10) || 0;
   let totalMin = (hh * 60) + mm + (hourOffset * 60) + slotMin;
@@ -750,7 +698,6 @@ function computeSlotTime_(shiftStart, slotKey, hourOffset, shift) {
   const outH = Math.floor(totalMin / 60);
   const outM = totalMin % 60;
   let s = pad2(outH) + ":" + pad2(outM);
-  // 나잇 시프트에서 다음날로 넘어가면 +1d 표시
   if (shift === "N" && (hh * 60 + mm + hourOffset * 60 + slotMin) >= 24 * 60) s += " +1d";
   return s;
 }
@@ -796,6 +743,153 @@ async function deleteSupervisorSlot(slotId) {
 }
 
 // ────────────────────────────────────────────────────────────
+// 화면 5: 본인 화면 (7단계)
+// ────────────────────────────────────────────────────────────
+async function openMy() {
+  currentScreen = SCREEN_MY;
+  myData = null; myLoading = true;
+  myAnchor = currentAnchor;
+  render();
+  await loadMyData_();
+}
+
+async function loadMyData_() {
+  myLoading = true; render();
+  const user = bootData.user || {};
+  try {
+    // 병렬로 본인 캘린더 + 오늘 휴게 + 이름 매핑용 staff list
+    const [detail, breaks, staffs] = await Promise.all([
+      apiGet("getStaffDetail", { employeeId: user.id, anchor: myAnchor }),
+      apiGet("getBreaks", { date: todayIso(), shift: user.defaultShift }),
+      apiGet("searchStaff", { q: "", shift: "all", category: "all", active: "all", limit: 300 })
+    ]);
+    if (!detail || !detail.ok) throw new Error("detail failed");
+    const nameMap = {};
+    if (staffs && staffs.ok && staffs.data && staffs.data.items) {
+      staffs.data.items.forEach(s => { nameMap[s.id] = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id); });
+    }
+    myData = {
+      anchor: detail.data.anchor,
+      dayStates: detail.data.dayStates,
+      breaksData: (breaks && breaks.ok) ? breaks.data : null,
+      nameMap: nameMap
+    };
+  } catch (err) {
+    showToast(t("toast.action_failed", { msg: err.message || err }));
+    myData = null;
+  }
+  myLoading = false; render();
+}
+
+function findMyGroup_(userId, breaksData) {
+  if (!breaksData || !breaksData.groups) return null;
+  for (let i = 0; i < breaksData.groups.length; i++) {
+    const g = breaksData.groups[i];
+    const slots = g.slots || {};
+    const keys = g.type === "triple" ? ["00","20","40"] : ["00","30"];
+    for (let j = 0; j < keys.length; j++) {
+      if (slots[keys[j]] === userId) {
+        return { groupIndex: i, group: g, mySlot: keys[j] };
+      }
+    }
+  }
+  return null;
+}
+
+function renderMy_(user) {
+  if (myLoading && !myData) return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
+  if (!myData) return `<div class="card"><p class="hint">${t("toast.action_failed", { msg: "load failed" })}</p></div>`;
+
+  const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
+  const headerCard = `<div class="card">
+    <h2>${escapeHtml(name)}</h2>
+    <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("shift." + user.defaultShift + ".time"))}</p>
+  </div>`;
+
+  // Today's Breaks
+  let todayCard = "";
+  const myGroup = findMyGroup_(user.id, myData.breaksData);
+  if (!myGroup) {
+    todayCard = `<div class="card">
+      <h2>${t("my.todays_breaks")} · ${escapeHtml(todayIso())}</h2>
+      <p class="hint">${t("my.no_breaks_today")}</p>
+    </div>`;
+  } else {
+    const slotKey = myGroup.mySlot;
+    const shiftStart = myData.breaksData.shiftStartTime || "00:00";
+    const shift = myData.breaksData.shift;
+    const times = [];
+    for (let h = 0; h < 8; h++) {
+      times.push(computeSlotTime_(shiftStart, slotKey, h, shift));
+    }
+    const rowsHtml = times.map((tm, i) => `<div class="my-break-row ${i === 0 ? "first" : ""}"><span class="clock">⏰</span><span class="time">${escapeHtml(tm)}</span>${i === 0 ? `<span class="label">— ${t("my.first_break")}</span>` : ""}</div>`).join("");
+    // 묶음 동료
+    const order = myGroup.group.type === "triple" ? ["00","20","40"] : ["00","30"];
+    const mates = order.filter(k => k !== slotKey).map(k => myGroup.group.slots[k]).filter(Boolean);
+    const mateNames = mates.map(id => myData.nameMap[id] || id).join(", ");
+    const typeLabel = myGroup.group.type === "triple" ? "triple" : "pair";
+    const groupInfoHtml = mates.length > 0
+      ? `<div class="my-group-info">${escapeHtml(t("my.group_with", { type: typeLabel, names: mateNames }))}</div>`
+      : `<div class="my-group-info">${escapeHtml(t("my.group_alone", { type: typeLabel }))}</div>`;
+    todayCard = `<div class="card">
+      <h2>${t("my.todays_breaks")} · ${escapeHtml(todayIso())}</h2>
+      <div class="my-breaks-list">${rowsHtml}</div>
+      ${groupInfoHtml}
+    </div>`;
+  }
+
+  // 본인 4주 캘린더 (read-only)
+  const dayStates = myData.dayStates || {};
+  const anchorIso = myData.anchor || myAnchor;
+  const today = todayIso();
+  const days = [];
+  for (let i = 0; i < 28; i++) {
+    const iso = fmtDate(addDays(parseDate(anchorIso), i));
+    const cell = dayStates[iso];
+    days.push({ iso, day: parseDate(iso).getDate(), state: cell ? cell.state : "work", isToday: iso === today });
+  }
+  const dowKeys = ["calendar.mon","calendar.tue","calendar.wed","calendar.thu","calendar.fri","calendar.sat","calendar.sun"];
+  const dowHeader = dowKeys.map((k, i) => `<div class="head ${i===5?"sat":i===6?"sun":""}">${t(k)}</div>`).join("");
+  const cells = days.map(d => {
+    const cls = ["day-cell", "viewer"];
+    if (d.state === "vacation") cls.push("vac");
+    else if (d.state === "dayoff") cls.push("off");
+    else if (d.state === "pre_practice") cls.push("pre");
+    else if (d.state === "special") cls.push("spl");
+    if (d.isToday) cls.push("today");
+    const lblText = d.state === "vacation" ? t("state.vacation.short") : d.state === "dayoff" ? t("state.dayoff.short") : d.state === "pre_practice" ? t("state.pre_practice.short") : d.state === "special" ? t("state.special.short") : "";
+    return `<div class="${cls.join(" ")}"><span class="d">${d.day}</span>${lblText?`<span class="lbl">${lblText}</span>`:""}</div>`;
+  }).join("");
+
+  const calendarCard = `<div class="card">
+    <h2>${t("my.schedule_4w")}</h2>
+    <div class="anchor-nav" style="margin-bottom:8px;">
+      <button class="ghost" data-my-anchor-delta="-28">${t("common.prev_4w")}</button>
+      <span class="range">${escapeHtml(rangeLabel(anchorIso))}</span>
+      <button class="ghost" data-my-anchor-delta="0">${t("common.today")}</button>
+      <button class="ghost" data-my-anchor-delta="28">${t("common.next_4w")}</button>
+    </div>
+    <div class="legend" style="margin-bottom:8px;">
+      <span class="legend-item"><span class="swatch" style="background:var(--vac)"></span>${t("state.vacation.short")}</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--off)"></span>${t("state.dayoff.short")}</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--pre)"></span>${t("state.pre_practice.short")}</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--spl)"></span>${t("state.special.short")}</span>
+    </div>
+    <div class="calendar">${dowHeader}${cells}</div>
+  </div>`;
+
+  const contactCard = `<div class="card"><p class="hint">${t("my.contact_admin_for_off")}</p></div>`;
+
+  return headerCard + todayCard + calendarCard + contactCard;
+}
+
+async function moveMyAnchor(days) {
+  if (days === 0) myAnchor = mondayOfThisWeek();
+  else myAnchor = fmtDate(addDays(parseDate(myAnchor), days));
+  await loadMyData_();
+}
+
+// ────────────────────────────────────────────────────────────
 // 부팅 + 이벤트
 // ────────────────────────────────────────────────────────────
 async function boot() {
@@ -814,8 +908,16 @@ async function boot() {
     if (!saved && r.lang) setLang(r.lang);
     bootData = r.data;
     loadPersistedState(bootData.user);
-    currentScreen = SCREEN_HOME;
-    render(); bindEvents();
+    // viewer는 자동으로 화면 5 진입
+    if (!bootData.user.isAdmin) {
+      currentScreen = SCREEN_MY;
+      bindEvents();
+      openMy();
+    } else {
+      currentScreen = SCREEN_HOME;
+      render();
+      bindEvents();
+    }
   } catch (err) {
     if (err && err.name === "AbortError") showAuthError("TIMEOUT", t("error.network") + " (timeout)");
     else showAuthError("NETWORK", t("error.network") + " — " + (err && err.message ? err.message : err));
@@ -830,6 +932,11 @@ function bindEvents() {
     back.addEventListener("click", () => {
       if (currentScreen === SCREEN_CALENDAR) { currentScreen = SCREEN_FIND_DEALER; selectedStaff = null; staffDetail = null; }
       else if (currentScreen === SCREEN_BREAKS) { currentScreen = SCREEN_HOME; breaksData = null; }
+      else if (currentScreen === SCREEN_MY) {
+        // viewer는 뒤로 가도 화면 5 그대로. admin은 홈으로.
+        if (bootData && bootData.user && bootData.user.isAdmin) { currentScreen = SCREEN_HOME; myData = null; }
+        else return;  // viewer는 무시
+      }
       else { currentScreen = SCREEN_HOME; }
       render();
     });
@@ -841,6 +948,7 @@ function bindEvents() {
       const navBtn = e.target.closest("[data-nav]");
       if (navBtn) {
         if (navBtn.dataset.nav === SCREEN_BREAKS) { openBreaks(); return; }
+        if (navBtn.dataset.nav === SCREEN_MY) { openMy(); return; }
         navigate(navBtn.dataset.nav); return;
       }
       const shiftBtn = e.target.closest("[data-shift]");
@@ -858,13 +966,14 @@ function bindEvents() {
         } else moveAnchor(delta);
         return;
       }
+      // 본인 화면 anchor
+      const myAnchorBtn = e.target.closest("[data-my-anchor-delta]");
+      if (myAnchorBtn) { moveMyAnchor(parseInt(myAnchorBtn.dataset.myAnchorDelta, 10)); return; }
       const card = e.target.closest("[data-staff-id]");
       if (card) { openCalendar(card.dataset.staffId, card.dataset.staffName); return; }
       const cell = e.target.closest("[data-cell-date]");
       if (cell) { if (!(bootData && bootData.user && bootData.user.isAdmin)) return; toggleCell(cell.dataset.cellDate, cell.dataset.cellState); return; }
       if (e.target.id === "vac-apply") { applyVacationRange(); return; }
-
-      // 6단계 인터랙션
       const hourChip = e.target.closest("[data-hour-offset]");
       if (hourChip) { breaksHourOffset = parseInt(hourChip.dataset.hourOffset, 10); render(); return; }
       if (e.target.id === "breaks-recompute") { recomputeBreaks(); return; }
