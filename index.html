@@ -4,129 +4,246 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Casino Schedule</title>
+<!-- 마이크로 4a: Quick Actions 활성 + placeholder 화면 라우팅 (2026-05-25) -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-:root { --bg: var(--tg-theme-bg-color, #ffffff); --text: var(--tg-theme-text-color, #1f2328); --hint: var(--tg-theme-hint-color, #6e7781); --link: var(--tg-theme-link-color, #2481cc); --btn: var(--tg-theme-button-color, #2481cc); --btn-text: var(--tg-theme-button-text-color, #ffffff); --bg-sec: var(--tg-theme-secondary-bg-color, #f4f4f5); --vac: #A8D5FF; --off: #FFE680; --pre: #FFC58A; --spl: #D8B4FE; }
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; min-height: 100vh; overflow-x: hidden; }
-.app-header { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--bg-sec); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.app-header h1 { margin: 0; font-size: 17px; font-weight: 600; }
-.lang-toggle { background: var(--bg-sec); border: none; color: var(--text); padding: 5px 10px; border-radius: 14px; font-size: 12px; cursor: pointer; white-space: nowrap; }
-.lang-toggle .active { font-weight: 700; color: var(--btn); }
-main { padding: 14px; max-width: 720px; margin: 0 auto; }
-.card { background: var(--bg-sec); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
-.card h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
-.card .hint { color: var(--hint); font-size: 13px; margin: 4px 0; }
-.btn { display: inline-block; background: var(--btn); color: var(--btn-text); border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; }
-.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.btn-row .btn { padding: 14px 10px; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.btn-row .btn .emo { font-size: 20px; }
-.btn-row .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; }
-.legend-item { display: inline-flex; align-items: center; gap: 4px; }
-.swatch { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); display: inline-block; }
-.fullscreen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; text-align: center; z-index: 100; }
-.fullscreen .icon { font-size: 56px; margin-bottom: 16px; }
-.fullscreen h2 { margin: 0 0 8px; font-size: 18px; }
-.fullscreen p { color: var(--hint); margin: 4px 0; font-size: 13px; max-width: 90%; }
-.fullscreen pre { color: var(--hint); font-size: 10px; text-align: left; background: var(--bg-sec); padding: 8px; border-radius: 6px; max-width: 100%; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
-.fullscreen .btn { margin-top: 18px; }
-.spinner { width: 28px; height: 28px; border: 3px solid var(--bg-sec); border-top-color: var(--btn); border-radius: 50%; animation: spin 0.9s linear infinite; margin-bottom: 14px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.meta-grid { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 12px; }
-.meta-grid dt { color: var(--hint); }
-.meta-grid dd { margin: 0; word-break: break-all; }
+  :root {
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --text: var(--tg-theme-text-color, #1f2328);
+    --hint: var(--tg-theme-hint-color, #6e7781);
+    --link: var(--tg-theme-link-color, #2481cc);
+    --btn: var(--tg-theme-button-color, #2481cc);
+    --btn-text: var(--tg-theme-button-text-color, #ffffff);
+    --bg-sec: var(--tg-theme-secondary-bg-color, #f4f4f5);
+    --vac: #A8D5FF; --off: #FFE680; --pre: #FFC58A; --spl: #D8B4FE;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.5; min-height: 100vh; overflow-x: hidden; }
+  .app-header { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--bg-sec); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .app-header .left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .app-header h1 { margin: 0; font-size: 17px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .back-btn { background: var(--bg-sec); border: none; color: var(--text); padding: 5px 10px; border-radius: 14px; font-size: 13px; cursor: pointer; }
+  .lang-toggle { background: var(--bg-sec); border: none; color: var(--text); padding: 5px 10px; border-radius: 14px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .lang-toggle .active { font-weight: 700; color: var(--btn); }
+  main { padding: 14px; max-width: 720px; margin: 0 auto; }
+  .card { background: var(--bg-sec); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .card h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+  .card .hint { color: var(--hint); font-size: 13px; margin: 4px 0; }
+  .btn { display: inline-block; background: var(--btn); color: var(--btn-text); border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 600; cursor: pointer; text-align: center; }
+  .btn.ghost { background: var(--bg-sec); color: var(--text); border: 1px solid var(--hint); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-row .btn { padding: 14px 10px; font-size: 13px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .btn-row .btn .emo { font-size: 22px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; }
+  .legend-item { display: inline-flex; align-items: center; gap: 4px; }
+  .swatch { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); display: inline-block; }
+  .fullscreen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; text-align: center; z-index: 100; }
+  .fullscreen .icon { font-size: 56px; margin-bottom: 16px; }
+  .fullscreen h2 { margin: 0 0 8px; font-size: 18px; }
+  .fullscreen p { color: var(--hint); margin: 4px 0; font-size: 13px; max-width: 90%; }
+  .fullscreen pre { color: var(--hint); font-size: 10px; text-align: left; background: var(--bg-sec); padding: 8px; border-radius: 6px; max-width: 100%; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  .fullscreen .btn { margin-top: 18px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--bg-sec); border-top-color: var(--btn); border-radius: 50%; animation: spin 0.9s linear infinite; margin-bottom: 14px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .meta-grid { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 12px; }
+  .meta-grid dt { color: var(--hint); }
+  .meta-grid dd { margin: 0; word-break: break-all; }
+  .placeholder-icon { font-size: 48px; text-align: center; margin: 10px 0; }
 </style>
 </head>
 <body>
+
 <div id="loading" class="fullscreen"><div class="spinner"></div><p id="loading-text">Loading…</p></div>
+
 <div id="app" style="display:none;">
   <header class="app-header">
-    <h1 id="header-title">Casino Schedule</h1>
+    <div class="left">
+      <button class="back-btn" id="back-btn" type="button" style="display:none;">←</button>
+      <h1 id="header-title">Casino Schedule</h1>
+    </div>
     <button class="lang-toggle" id="lang-toggle" type="button">
       <span data-lang="en">EN</span> / <span data-lang="ko">한국어</span>
     </button>
   </header>
   <main id="main"></main>
 </div>
+
 <script>
 "use strict";
+
 const API_BASE = "https://script.google.com/macros/s/AKfycbybll_0YVphugr4SS2-maVtKTJ1uIf8aRJheAMBLU9UkZAqAXjrFDRXjwqqbaGAQNhA/exec";
 const FETCH_TIMEOUT_MS = 10000;
+
+// ────────────────────────────────────────────────────────────
+// i18n
+// ────────────────────────────────────────────────────────────
 const I18N = {
   en: {
     "common.app_title":"Casino Schedule","common.refresh":"Refresh","common.loading":"Loading…",
-    "home.quick_actions":"Quick Actions","home.find_dealer":"Find Dealer","home.vacation_range":"Vacation Range","home.breaks_today":"Breaks today","home.shift_cycle":"Shift Cycle","home.add_staff":"Add Staff","home.backup":"Backup",
-    "my.todays_breaks":"Today's Breaks","my.no_breaks_today":"No break assignment today.","my.contact_admin_for_off":"Need a day off? Contact admin.",
+    "common.back":"Back",
+    "home.title":"Home",
+    "home.quick_actions":"Quick Actions",
+    "home.find_dealer":"Find Dealer","home.vacation_range":"Vacation Range",
+    "home.breaks_today":"Breaks today","home.shift_cycle":"Shift Cycle",
+    "home.add_staff":"Add Staff","home.backup":"Backup",
+    "my.todays_breaks":"Today's Breaks","my.no_breaks_today":"No break assignment today.",
+    "my.contact_admin_for_off":"Need a day off? Contact admin.",
     "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
     "state.vacation.full":"Vacation","state.dayoff.full":"Day off","state.pre_practice.full":"Pre-practice","state.special.full":"Special",
     "shift.M.full":"Morning","shift.A.full":"Afternoon","shift.N.full":"Night",
-    "error.network":"Network error.","error.auth_missing":"Authentication required.","error.auth_invalid":"Invalid signature.","error.auth_expired":"Session expired.","error.not_registered":"Not registered. Contact admin.","error.internal":"Internal error.",
-    "boot.welcome_admin":"Welcome, {name} — admin.","boot.welcome_viewer":"Welcome, {name}.","boot.role_admin":"Administrator","boot.role_viewer":"View only","boot.connected":"Connected ✓","boot.legend":"Legend","boot.stage3b_note":"Stage 3b — quick actions disabled (Stage 4 enables them)."
+    "error.network":"Network error.","error.auth_missing":"Authentication required.",
+    "error.auth_invalid":"Invalid signature.","error.auth_expired":"Session expired.",
+    "error.not_registered":"Not registered. Contact admin.","error.internal":"Internal error.",
+    "boot.welcome_admin":"Welcome, {name} — admin.","boot.welcome_viewer":"Welcome, {name}.",
+    "boot.role_admin":"Administrator","boot.role_viewer":"View only",
+    "boot.connected":"Connected ✓","boot.legend":"Legend",
+    "placeholder.coming_in":"Coming in Stage {n}.",
+    "placeholder.find_dealer.desc":"Search dealers/supervisors by name, shift, status.",
+    "placeholder.vacation_range.desc":"Bulk vacation by date range.",
+    "placeholder.breaks_today.desc":"Today's auto break assignments + supervisor manual slots.",
+    "placeholder.shift_cycle.desc":"Create / end shift cycles.",
+    "placeholder.add_staff.desc":"Add new dealer/supervisor + Telegram ID mapping.",
+    "placeholder.backup.desc":"Spreadsheet auto backup (weekly)."
   },
   ko: {
     "common.app_title":"카지노 스케줄","common.refresh":"새로고침","common.loading":"불러오는 중…",
-    "home.quick_actions":"빠른 작업","home.find_dealer":"딜러 찾기","home.vacation_range":"휴가 범위","home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 사이클","home.add_staff":"인원 추가","home.backup":"백업",
-    "my.todays_breaks":"오늘 내 휴게","my.no_breaks_today":"오늘 휴게 배정 없음.","my.contact_admin_for_off":"휴무가 필요하면 관리자에게 문의하세요.",
+    "common.back":"뒤로",
+    "home.title":"홈",
+    "home.quick_actions":"빠른 작업",
+    "home.find_dealer":"딜러 찾기","home.vacation_range":"휴가 범위",
+    "home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 사이클",
+    "home.add_staff":"인원 추가","home.backup":"백업",
+    "my.todays_breaks":"오늘 내 휴게","my.no_breaks_today":"오늘 휴게 배정 없음.",
+    "my.contact_admin_for_off":"휴무가 필요하면 관리자에게 문의하세요.",
     "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
     "state.vacation.full":"휴가","state.dayoff.full":"휴무","state.pre_practice.full":"사전연습","state.special.full":"특별",
     "shift.M.full":"모닝","shift.A.full":"애프터눈","shift.N.full":"나잇",
-    "error.network":"네트워크 오류.","error.auth_missing":"인증이 필요합니다.","error.auth_invalid":"서명이 잘못되었습니다.","error.auth_expired":"세션 만료.","error.not_registered":"등록되지 않은 사용자입니다. 관리자에게 문의하세요.","error.internal":"내부 오류.",
-    "boot.welcome_admin":"안녕하세요, {name}님 — 관리자.","boot.welcome_viewer":"안녕하세요, {name}님.","boot.role_admin":"관리자","boot.role_viewer":"보기 전용","boot.connected":"연결됨 ✓","boot.legend":"색상 범례","boot.stage3b_note":"3b 단계 — 빠른 작업 버튼은 4단계에서 활성화."
+    "error.network":"네트워크 오류.","error.auth_missing":"인증이 필요합니다.",
+    "error.auth_invalid":"서명이 잘못되었습니다.","error.auth_expired":"세션 만료.",
+    "error.not_registered":"등록되지 않은 사용자입니다. 관리자에게 문의하세요.","error.internal":"내부 오류.",
+    "boot.welcome_admin":"안녕하세요, {name}님 — 관리자.","boot.welcome_viewer":"안녕하세요, {name}님.",
+    "boot.role_admin":"관리자","boot.role_viewer":"보기 전용",
+    "boot.connected":"연결됨 ✓","boot.legend":"색상 범례",
+    "placeholder.coming_in":"{n}단계에서 활성화됩니다.",
+    "placeholder.find_dealer.desc":"이름·시프트·상태로 딜러/슈퍼바이저 검색.",
+    "placeholder.vacation_range.desc":"날짜 범위 휴가 일괄 입력.",
+    "placeholder.breaks_today.desc":"오늘 자동 휴게 배정 + 슈퍼바이저 수동 슬롯.",
+    "placeholder.shift_cycle.desc":"시프트 사이클 생성/종료.",
+    "placeholder.add_staff.desc":"신규 딜러/슈퍼바이저 추가 + 텔레그램 ID 매핑.",
+    "placeholder.backup.desc":"스프레드시트 자동 백업 (주1회)."
   }
 };
+
 let LANG = "en";
-function setLang(lang) { LANG = (lang === "ko") ? "ko" : "en"; try { localStorage.setItem("scheduleApp.lang", LANG); } catch (e) {} document.documentElement.setAttribute("lang", LANG); document.querySelectorAll(".lang-toggle [data-lang]").forEach(el => el.classList.toggle("active", el.dataset.lang === LANG)); }
-function detectInitialLang() { try { const s = localStorage.getItem("scheduleApp.lang"); if (s === "en" || s === "ko") return s; } catch (e) {} const tg = window.Telegram && window.Telegram.WebApp; const c = tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code; return (c && String(c).toLowerCase().startsWith("ko")) ? "ko" : "en"; }
-function t(key, vars) { const dict = I18N[LANG] || I18N.en; let s = dict[key]; if (s == null) { s = "[" + key + "]"; console.warn("[i18n] missing key:", key, LANG); } if (vars) Object.keys(vars).forEach(k => s = s.replace(new RegExp("\\{" + k + "\\}", "g"), vars[k])); return s; }
-function escapeHtml(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
-async function fetchWithTimeout(url, ms) { const c = new AbortController(); const tid = setTimeout(() => c.abort(), ms); try { return await fetch(url, { signal: c.signal, method: "GET", redirect: "follow", mode: "cors", credentials: "omit" }); } finally { clearTimeout(tid); } }
+
+function setLang(lang) {
+  LANG = (lang === "ko") ? "ko" : "en";
+  try { localStorage.setItem("scheduleApp.lang", LANG); } catch (e) {}
+  document.documentElement.setAttribute("lang", LANG);
+  document.querySelectorAll(".lang-toggle [data-lang]").forEach(el => {
+    el.classList.toggle("active", el.dataset.lang === LANG);
+  });
+}
+
+function detectInitialLang() {
+  try {
+    const s = localStorage.getItem("scheduleApp.lang");
+    if (s === "en" || s === "ko") return s;
+  } catch (e) {}
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const c = tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code;
+  return (c && String(c).toLowerCase().startsWith("ko")) ? "ko" : "en";
+}
+
+function t(key, vars) {
+  const dict = I18N[LANG] || I18N.en;
+  let s = dict[key];
+  if (s == null) { s = "[" + key + "]"; console.warn("[i18n] missing key:", key, LANG); }
+  if (vars) Object.keys(vars).forEach(k => s = s.replace(new RegExp("\\{" + k + "\\}", "g"), vars[k]));
+  return s;
+}
+
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+
+// ────────────────────────────────────────────────────────────
+// 네트워크
+// ────────────────────────────────────────────────────────────
+async function fetchWithTimeout(url, ms) {
+  const c = new AbortController();
+  const tid = setTimeout(() => c.abort(), ms);
+  try { return await fetch(url, { signal: c.signal, method: "GET", redirect: "follow", mode: "cors", credentials: "omit" }); }
+  finally { clearTimeout(tid); }
+}
+
 async function apiCall(action, extraParams) {
   const tg = window.Telegram && window.Telegram.WebApp;
   const initData = (tg && tg.initData) || "";
   const params = new URLSearchParams();
-  params.set("action", action); if (initData) params.set("initData", initData);
+  params.set("action", action);
+  if (initData) params.set("initData", initData);
   if (extraParams) Object.keys(extraParams).forEach(k => { if (extraParams[k] != null) params.set(k, String(extraParams[k])); });
   const sep = API_BASE.indexOf("?") >= 0 ? "&" : "?";
   const res = await fetchWithTimeout(API_BASE + sep + params.toString(), FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error("HTTP " + res.status);
   return await res.json();
 }
-async function boot() {
-  const tg = window.Telegram && window.Telegram.WebApp;
-  if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
-  setLang(detectInitialLang());
-  document.getElementById("loading-text").textContent = t("common.loading");
-  try {
-    const r = await apiCall("ping");
-    if (!r || !r.ok) {
-      const code = (r && r.error && r.error.code) || "INTERNAL";
-      const msg = (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || t("error.internal");
-      showAuthError(code, msg); return;
-    }
-    let saved = null; try { saved = localStorage.getItem("scheduleApp.lang"); } catch (e) {}
-    if (!saved && r.lang) setLang(r.lang);
-    renderHome(r.data);
-  } catch (err) {
-    if (err && err.name === "AbortError") showAuthError("TIMEOUT", t("error.network") + " (timeout)");
-    else showAuthError("NETWORK", t("error.network") + " — " + (err && err.message ? err.message : err));
-  }
+
+// ────────────────────────────────────────────────────────────
+// 라우팅 (단순 클라이언트 상태)
+// ────────────────────────────────────────────────────────────
+const SCREEN_HOME = "home";
+const PLACEHOLDER_SCREENS = {
+  "find_dealer":    { emo: "👤", titleKey: "home.find_dealer",    descKey: "placeholder.find_dealer.desc",    stage: 5 },
+  "vacation_range": { emo: "📅", titleKey: "home.vacation_range", descKey: "placeholder.vacation_range.desc", stage: 5 },
+  "breaks_today":   { emo: "☕", titleKey: "home.breaks_today",   descKey: "placeholder.breaks_today.desc",   stage: 6 },
+  "shift_cycle":    { emo: "🔄", titleKey: "home.shift_cycle",    descKey: "placeholder.shift_cycle.desc",    stage: 8 },
+  "add_staff":      { emo: "➕", titleKey: "home.add_staff",      descKey: "placeholder.add_staff.desc",      stage: 8 },
+  "backup":         { emo: "📤", titleKey: "home.backup",         descKey: "placeholder.backup.desc",         stage: 10 }
+};
+
+let currentScreen = SCREEN_HOME;
+let bootData = null;  // ping 응답 data 캐시
+
+function navigate(screen) {
+  currentScreen = screen;
+  render();
 }
-function renderHome(data) {
-  const user = data.user || {};
+
+function render() {
+  if (!bootData) return;  // 부팅 안 끝남
+  const user = bootData.user || {};
   const isAdmin = !!user.isAdmin;
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
-  document.getElementById("header-title").textContent = t("common.app_title");
+
+  // 헤더 라벨/뒤로 가기 표시
+  const backBtn = document.getElementById("back-btn");
+  const headerTitle = document.getElementById("header-title");
+  if (currentScreen === SCREEN_HOME) {
+    backBtn.style.display = "none";
+    headerTitle.textContent = t("common.app_title");
+  } else {
+    backBtn.style.display = "inline-block";
+    const cfg = PLACEHOLDER_SCREENS[currentScreen];
+    headerTitle.textContent = cfg ? t(cfg.titleKey) : t("common.app_title");
+  }
+
+  // 본문
   const main = document.getElementById("main");
-  main.innerHTML = isAdmin ? renderAdminHome_(user, name) : renderViewerHome_(user, name);
+  if (currentScreen === SCREEN_HOME) {
+    main.innerHTML = isAdmin ? renderAdminHome_(user, name) : renderViewerHome_(user, name);
+  } else if (PLACEHOLDER_SCREENS[currentScreen]) {
+    main.innerHTML = renderPlaceholder_(currentScreen);
+  } else {
+    main.innerHTML = renderAdminHome_(user, name);
+  }
+
+  // 첫 렌더 시 로딩 숨김
   document.getElementById("loading").style.display = "none";
   document.getElementById("app").style.display = "block";
-  const toggle = document.getElementById("lang-toggle");
-  if (!toggle.dataset.bound) {
-    toggle.addEventListener("click", () => { setLang(LANG === "en" ? "ko" : "en"); renderHome(data); });
-    toggle.dataset.bound = "1";
-  }
 }
+
 function renderAdminHome_(user, name) {
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
@@ -140,14 +257,13 @@ function renderAdminHome_(user, name) {
       </div></div>
     <div class="card"><h2>${t("home.quick_actions")}</h2>
       <div class="btn-row">
-        <button class="btn" disabled><span class="emo">👤</span>${t("home.find_dealer")}</button>
-        <button class="btn" disabled><span class="emo">📅</span>${t("home.vacation_range")}</button>
-        <button class="btn" disabled><span class="emo">☕</span>${t("home.breaks_today")}</button>
-        <button class="btn" disabled><span class="emo">🔄</span>${t("home.shift_cycle")}</button>
-        <button class="btn" disabled><span class="emo">➕</span>${t("home.add_staff")}</button>
-        <button class="btn" disabled><span class="emo">📤</span>${t("home.backup")}</button>
-      </div>
-      <p class="hint" style="margin-top:10px;">${t("boot.stage3b_note")}</p></div>
+        <button class="btn" data-nav="find_dealer"><span class="emo">👤</span>${t("home.find_dealer")}</button>
+        <button class="btn" data-nav="vacation_range"><span class="emo">📅</span>${t("home.vacation_range")}</button>
+        <button class="btn" data-nav="breaks_today"><span class="emo">☕</span>${t("home.breaks_today")}</button>
+        <button class="btn" data-nav="shift_cycle"><span class="emo">🔄</span>${t("home.shift_cycle")}</button>
+        <button class="btn" data-nav="add_staff"><span class="emo">➕</span>${t("home.add_staff")}</button>
+        <button class="btn" data-nav="backup"><span class="emo">📤</span>${t("home.backup")}</button>
+      </div></div>
     <div class="card"><h2>${t("boot.connected")}</h2>
       <dl class="meta-grid">
         <dt>ID</dt><dd>${escapeHtml(user.id)}</dd>
@@ -156,16 +272,82 @@ function renderAdminHome_(user, name) {
       </dl></div>
   `;
 }
+
 function renderViewerHome_(user, name) {
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_viewer", { name }))}</h2>
       <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_viewer"))}</p></div>
     <div class="card"><h2>${t("my.todays_breaks")}</h2>
-      <p class="hint">${t("my.no_breaks_today")}</p>
-      <p class="hint">${t("boot.stage3b_note")}</p></div>
+      <p class="hint">${t("my.no_breaks_today")}</p></div>
     <div class="card"><p class="hint">${t("my.contact_admin_for_off")}</p></div>
   `;
 }
+
+function renderPlaceholder_(screen) {
+  const cfg = PLACEHOLDER_SCREENS[screen];
+  if (!cfg) return "";
+  return `
+    <div class="card">
+      <div class="placeholder-icon">${cfg.emo}</div>
+      <h2 style="text-align:center;">${t(cfg.titleKey)}</h2>
+      <p class="hint" style="text-align:center;">${t(cfg.descKey)}</p>
+      <p class="hint" style="text-align:center; margin-top:14px;">${t("placeholder.coming_in", { n: cfg.stage })}</p>
+    </div>
+  `;
+}
+
+// ────────────────────────────────────────────────────────────
+// 부팅
+// ────────────────────────────────────────────────────────────
+async function boot() {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
+  setLang(detectInitialLang());
+  document.getElementById("loading-text").textContent = t("common.loading");
+  try {
+    const r = await apiCall("ping");
+    if (!r || !r.ok) {
+      const code = (r && r.error && r.error.code) || "INTERNAL";
+      const msg = (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || t("error.internal");
+      showAuthError(code, msg);
+      return;
+    }
+    let saved = null;
+    try { saved = localStorage.getItem("scheduleApp.lang"); } catch (e) {}
+    if (!saved && r.lang) setLang(r.lang);
+    bootData = r.data;
+    currentScreen = SCREEN_HOME;
+    render();
+    bindEvents();
+  } catch (err) {
+    if (err && err.name === "AbortError") showAuthError("TIMEOUT", t("error.network") + " (timeout)");
+    else showAuthError("NETWORK", t("error.network") + " — " + (err && err.message ? err.message : err));
+  }
+}
+
+function bindEvents() {
+  const toggle = document.getElementById("lang-toggle");
+  if (!toggle.dataset.bound) {
+    toggle.addEventListener("click", () => { setLang(LANG === "en" ? "ko" : "en"); render(); });
+    toggle.dataset.bound = "1";
+  }
+  const back = document.getElementById("back-btn");
+  if (!back.dataset.bound) {
+    back.addEventListener("click", () => navigate(SCREEN_HOME));
+    back.dataset.bound = "1";
+  }
+  // 본문 내 [data-nav] 위임
+  const mainEl = document.getElementById("main");
+  if (!mainEl.dataset.bound) {
+    mainEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-nav]");
+      if (!btn) return;
+      navigate(btn.dataset.nav);
+    });
+    mainEl.dataset.bound = "1";
+  }
+}
+
 function showAuthError(code, message) {
   let icon = "⚠️", title = message, sub = "";
   const tg = window.Telegram && window.Telegram.WebApp;
@@ -181,7 +363,10 @@ function showAuthError(code, message) {
   loading.style.display = "flex";
   document.getElementById("app").style.display = "none";
 }
+
 document.addEventListener("DOMContentLoaded", boot);
 </script>
+
 </body>
 </html>
+
