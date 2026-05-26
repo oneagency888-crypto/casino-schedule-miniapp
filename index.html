@@ -26,6 +26,12 @@
   .back-btn { background: var(--bg-sec); border: none; color: var(--text); padding: 5px 10px; border-radius: 14px; font-size: 13px; cursor: pointer; }
   .lang-toggle { background: var(--bg-sec); border: none; color: var(--text); padding: 5px 10px; border-radius: 14px; font-size: 12px; cursor: pointer; white-space: nowrap; }
   .lang-toggle .active { font-weight: 700; color: var(--btn); }
+  /* REFRESH-1 (2026-05-26): 헤더 ↻ 새로고침 버튼 */
+  .refresh-btn { background: var(--bg-sec); border: none; color: var(--text); padding: 5px 9px; border-radius: 14px; font-size: 15px; cursor: pointer; line-height: 1; transition: transform 0.4s ease; }
+  .refresh-btn:active { transform: rotate(180deg); }
+  .refresh-btn.spinning { animation: refresh-spin 0.6s ease; }
+  @keyframes refresh-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .header-actions { display: flex; align-items: center; gap: 6px; }
   main { padding: 14px; max-width: 720px; margin: 0 auto; }
   .card { background: var(--bg-sec); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
   .card h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
@@ -162,9 +168,12 @@
       <button class="back-btn" id="back-btn" type="button" style="display:none;">←</button>
       <h1 id="header-title">Casino Schedule</h1>
     </div>
-    <button class="lang-toggle" id="lang-toggle" type="button">
-      <span data-lang="en">EN</span> / <span data-lang="ko">한국어</span>
-    </button>
+    <div class="header-actions">
+      <button class="refresh-btn" id="refresh-btn" type="button" title="Refresh" aria-label="Refresh">↻</button>
+      <button class="lang-toggle" id="lang-toggle" type="button">
+        <span data-lang="en">EN</span> / <span data-lang="ko">한국어</span>
+      </button>
+    </div>
   </header>
   <main id="main"></main>
 </div>
@@ -179,7 +188,7 @@ const FETCH_TIMEOUT_MS = 15000;
 
 const I18N = {
   en: {
-    "common.app_title":"Casino Schedule","common.refresh":"Refresh","common.loading":"Loading…",
+    "common.app_title":"Casino Schedule","common.refresh":"Refresh","common.refreshed":"Refreshed","common.loading":"Loading…",
     "common.back":"Back","common.today":"Today","common.prev_4w":"◀ Prev 4w","common.next_4w":"Next 4w ▶",
     "common.save":"Save","common.cancel":"Cancel","common.apply":"Apply","common.delete":"Delete",
     "common.active":"Active","common.inactive":"Inactive",
@@ -257,7 +266,7 @@ const I18N = {
     "toast.cycle_created":"Cycle created","toast.cycle_updated":"Assignment updated","toast.cycle_ended":"Cycle ended"
   },
   ko: {
-    "common.app_title":"카지노 스케줄","common.refresh":"새로고침","common.loading":"불러오는 중…",
+    "common.app_title":"카지노 스케줄","common.refresh":"새로고침","common.refreshed":"새로고침 완료","common.loading":"불러오는 중…",
     "common.back":"뒤로","common.today":"오늘","common.prev_4w":"◀ 이전 4주","common.next_4w":"다음 4주 ▶",
     "common.save":"저장","common.cancel":"취소","common.apply":"적용","common.delete":"삭제",
     "common.active":"재직","common.inactive":"비활성",
@@ -337,7 +346,15 @@ const I18N = {
 };
 
 let LANG = "en";
-function setLang(lang) { LANG = (lang === "ko") ? "ko" : "en"; try { localStorage.setItem("scheduleApp.lang", LANG); } catch (e) {} document.documentElement.setAttribute("lang", LANG); document.querySelectorAll(".lang-toggle [data-lang]").forEach(el => el.classList.toggle("active", el.dataset.lang === LANG)); }
+function setLang(lang) {
+  LANG = (lang === "ko") ? "ko" : "en";
+  try { localStorage.setItem("scheduleApp.lang", LANG); } catch (e) {}
+  document.documentElement.setAttribute("lang", LANG);
+  document.querySelectorAll(".lang-toggle [data-lang]").forEach(el => el.classList.toggle("active", el.dataset.lang === LANG));
+  // REFRESH-1: 새로고침 버튼 툴팁 i18n
+  const rb = document.getElementById("refresh-btn");
+  if (rb) { rb.title = t("common.refresh"); rb.setAttribute("aria-label", t("common.refresh")); }
+}
 function detectInitialLang() { try { const s = localStorage.getItem("scheduleApp.lang"); if (s === "en" || s === "ko") return s; } catch (e) {} const tg = window.Telegram && window.Telegram.WebApp; const c = tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code; return (c && String(c).toLowerCase().startsWith("ko")) ? "ko" : "en"; }
 function t(key, vars) { const dict = I18N[LANG] || I18N.en; let s = dict[key]; if (s == null) { s = "[" + key + "]"; console.warn("[i18n] missing:", key, LANG); } if (vars) Object.keys(vars).forEach(k => s = s.replace(new RegExp("\\{" + k + "\\}", "g"), vars[k])); return s; }
 function escapeHtml(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
@@ -388,8 +405,10 @@ async function apiPost(action, body) {
 // P2-3 (2026-05-26): localStorage 영속 — 세션 재시작해도 직전 데이터 즉시
 // 쓰기 액션 발생 시 invalidateCache(prefix)로 명시 무효화.
 // ────────────────────────────────────────────────────────────
-const READ_CACHE_TTL_MS = 60 * 1000;       // 신선도 기준 (60초 이내면 fresh)
-const READ_CACHE_MAX_AGE_MS = 60 * 60 * 1000;  // SWR/localStorage 최대 유효 (1시간)
+// BUG-3 (2026-05-26): 공유 schedule 데이터에서 60s 캐시 + SWR이 시간차 유발 → TTL 단축.
+// 같은 화면 재진입 캐시 hit 효과는 유지 (10초 이내 재진입은 즉시), 옛 데이터 잔류 최소화.
+const READ_CACHE_TTL_MS = 10 * 1000;       // 신선도 기준 (10초 이내면 fresh, 백그라운드 fetch 안 함)
+const READ_CACHE_MAX_AGE_MS = 10 * 60 * 1000;  // SWR/localStorage 최대 유효 (10분, 이후 강제 fresh)
 const LS_CACHE_PREFIX = "scheduleApp.cache.v1.";
 const LS_CACHE_MAX_KEYS = 30;  // 용량 제한
 const readCache = new Map();  // key → { expires, value, fetchedAt }
@@ -770,8 +789,9 @@ async function openCalendar(staffId, staffName) {
   selectedStaff = { id: staffId, name: staffName };
   currentScreen = SCREEN_CALENDAR; staffDetail = null; render();
   try {
-    // C-1(d) 캐시 + P2-2 SWR
+    // BUG-3 (2026-05-26): 캘린더 진입은 명시 액션 → 강제 fresh (옛 셀 상태 잔류 방지)
     const r = await apiGetCached("getStaffDetail", { employeeId: staffId, anchor: currentAnchor }, {
+      forceFresh: true,
       onUpdate: (fresh) => {
         if (selectedStaff && selectedStaff.id === staffId && currentScreen === SCREEN_CALENDAR) {
           if (fresh.data) { staffDetail = fresh.data; render(); }
@@ -866,15 +886,17 @@ async function applyVacationRange() {
 async function openBreaks() {
   currentScreen = SCREEN_BREAKS; breaksDate = todayIso(); breaksShift = currentShift; breaksHourOffset = 0;
   breaksData = null; breaksLoading = true; render();
-  await loadBreaks_();
+  // BUG-3: 휴게 화면 진입은 명시 액션 → 강제 fresh
+  await loadBreaks_(true);
 }
 
-async function loadBreaks_() {
+async function loadBreaks_(forceFresh) {
   breaksLoading = true; render();
   const _d = breaksDate, _s = breaksShift;
   try {
-    // C-1(d) 캐시 + P2-2 SWR
+    // BUG-3 (2026-05-26): forceFresh 옵션 — 사용자 명시 액션 시 SWR 우회
     const r = await apiGetCached("getBreaks", { date: _d, shift: _s }, {
+      forceFresh: !!forceFresh,
       onUpdate: (fresh) => {
         if (currentScreen === SCREEN_BREAKS && breaksDate === _d && breaksShift === _s) {
           if (fresh.data) { breaksData = fresh.data; render(); }
@@ -994,18 +1016,20 @@ async function openMy() {
   myData = null; myLoading = true;
   myAnchor = currentAnchor;
   render();
-  await loadMyData_();
+  // BUG-3 (2026-05-26): "내 휴게" 화면 진입은 명시적 사용자 액션 → 강제 fresh
+  await loadMyData_(true);
 }
 
-async function loadMyData_() {
+async function loadMyData_(forceFresh) {
   myLoading = true; render();
   const user = bootData.user || {};
   try {
     // C-1(c) (2026-05-26): 3개 API → 1개 통합 호출 getMyView.
     //   서버에서 Promise.all로 직렬화되던 3-fetch 제거.
-    // C-1(d): 60s 캐시. P2-2 SWR: stale도 즉시 + 백그라운드 갱신.
+    // BUG-3 (2026-05-26): forceFresh=true면 SWR 우회, 항상 fresh fetch (옛 데이터 잔류 방지)
     const _a = myAnchor, _s = user.defaultShift;
     const r = await apiGetCached("getMyView", { employeeId: user.id, anchor: _a, shift: _s }, {
+      forceFresh: !!forceFresh,
       onUpdate: (fresh) => {
         if (currentScreen === SCREEN_MY && myAnchor === _a) {
           const v = (fresh && fresh.data) || null;
@@ -1147,7 +1171,8 @@ function renderMy_(user) {
 async function moveMyAnchor(days) {
   if (days === 0) myAnchor = mondayOfThisWeek();
   else myAnchor = fmtDate(addDays(parseDate(myAnchor), days));
-  await loadMyData_();
+  // BUG-3: anchor 이동도 명시 액션 → 강제 fresh
+  await loadMyData_(true);
 }
 
 // ────────────────────────────────────────────────────────────
@@ -1509,9 +1534,54 @@ function schedulePrefetch_() {
   }, 400);  // 홈 렌더 완료 후 400ms
 }
 
+// BUG-3 (2026-05-26): 화면 visibility 복귀(다른 앱 갔다가 돌아옴) 시 현재 화면 자동 새로고침.
+// 공유 schedule 데이터의 staleness 윈도우 추가 단축.
+document.addEventListener("visibilitychange", function() {
+  if (document.visibilityState !== "visible" || !bootData) return;
+  if (currentScreen === SCREEN_MY) loadMyData_(true);
+  else if (currentScreen === SCREEN_BREAKS) loadBreaks_(true);
+  else if (currentScreen === SCREEN_CALENDAR && selectedStaff) {
+    // 캐시 무효화 후 다시 진입
+    invalidateCache("getStaffDetail");
+    openCalendar(selectedStaff.id, selectedStaff.name);
+  }
+});
+
+// REFRESH-1 (2026-05-26): 컨텍스트 인식 새로고침 — 현재 화면에 맞는 fresh fetch.
+async function manualRefresh() {
+  const btn = document.getElementById("refresh-btn");
+  if (btn) { btn.classList.remove("spinning"); void btn.offsetWidth; btn.classList.add("spinning"); }
+  try {
+    if (currentScreen === SCREEN_MY) {
+      await loadMyData_(true);
+    } else if (currentScreen === SCREEN_BREAKS) {
+      await loadBreaks_(true);
+    } else if (currentScreen === SCREEN_CALENDAR && selectedStaff) {
+      invalidateCache("getStaffDetail");
+      await openCalendar(selectedStaff.id, selectedStaff.name);
+    } else if (currentScreen === SCREEN_FIND_DEALER) {
+      invalidateCache("searchStaff");
+      triggerSearch();
+    } else if (currentScreen === SCREEN_STAFF) {
+      invalidateCache("searchStaff");
+      await loadStaffList_();
+    } else if (currentScreen === SCREEN_CYCLE) {
+      invalidateCache("listShiftCycles");
+      await loadCycles_();
+    } else if (currentScreen === SCREEN_HOME) {
+      // 홈에선 ping 결과 갱신 — 별도 처리 불필요. 토스트만.
+    }
+    showToast(t("common.refreshed"), 1400);
+  } catch (err) {
+    showToast(t("toast.action_failed", { msg: err.message || err }));
+  }
+}
+
 function bindEvents() {
   const toggle = document.getElementById("lang-toggle");
   if (!toggle.dataset.bound) { toggle.addEventListener("click", () => { setLang(LANG === "en" ? "ko" : "en"); render(); }); toggle.dataset.bound = "1"; }
+  const refresh = document.getElementById("refresh-btn");
+  if (refresh && !refresh.dataset.bound) { refresh.addEventListener("click", manualRefresh); refresh.dataset.bound = "1"; }
   const back = document.getElementById("back-btn");
   if (!back.dataset.bound) {
     back.addEventListener("click", () => {
@@ -1543,7 +1613,7 @@ function bindEvents() {
       const shiftBtn = e.target.closest("[data-shift]");
       if (shiftBtn) { setShift(shiftBtn.dataset.shift); return; }
       const breakShiftBtn = e.target.closest("[data-break-shift]");
-      if (breakShiftBtn) { breaksShift = breakShiftBtn.dataset.breakShift; breaksHourOffset = 0; loadBreaks_(); return; }
+      if (breakShiftBtn) { breaksShift = breakShiftBtn.dataset.breakShift; breaksHourOffset = 0; loadBreaks_(true); return; }
       const anchorBtn = e.target.closest("[data-anchor-delta]");
       if (anchorBtn) {
         const delta = parseInt(anchorBtn.dataset.anchorDelta, 10);
