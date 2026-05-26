@@ -1,0 +1,45 @@
+name: 급여 명세 발송
+
+on:
+  workflow_dispatch:
+    inputs:
+      tab_name:
+        description: '시트 탭 이름 (예: 5/11-5/24)'
+        required: true
+      test_mode:
+        description: '테스트 모드 (나에게만 발송)'
+        type: boolean
+        default: true
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r telegram-payroll-bot/requirements.txt
+
+      - name: Create credentials file
+        run: |
+          mkdir -p telegram-payroll-bot/credentials
+          echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > telegram-payroll-bot/credentials/google-service-account.json
+
+      - name: Send payroll
+        working-directory: telegram-payroll-bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          GOOGLE_CREDENTIALS_PATH: credentials/google-service-account.json
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SHEET_TAB_NAME: ${{ github.event.inputs.tab_name }}
+          TEST_CHAT_ID: ${{ secrets.TEST_CHAT_ID }}
+        run: |
+          if [ "${{ github.event.inputs.test_mode }}" = "true" ]; then
+            python scripts/send_payroll.py --test
+          else
+            python scripts/send_payroll.py
+          fi
