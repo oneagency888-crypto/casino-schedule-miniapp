@@ -115,21 +115,29 @@
   .break-group .gh { font-size: 13px; color: var(--text); margin-bottom: 6px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
   .break-group .gh .g-tables { font-family: monospace; }
   .break-group .gh .g-type { background: var(--bg-sec); color: var(--hint); border-radius: 8px; padding: 1px 8px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+  /* REQ-7 (2026-05-26): 출근 인원 카드 */
+  .attendance-card .attendance-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-bottom: 1px dashed var(--bg-sec); }
+  .attendance-card .attendance-row:last-child { border-bottom: none; }
+  .attendance-card .att-label { color: var(--hint); font-size: 13px; }
+  .attendance-card .att-value { color: var(--text); font-weight: 700; font-size: 14px; }
+  .attendance-card .att-value.tables { font-family: monospace; font-size: 13px; }
+  .attendance-card .att-value.tables.idle { color: var(--hint); font-weight: 500; opacity: 0.7; }
   .break-slots { display: grid; gap: 4px; }
   .break-slots .row { display: flex; gap: 8px; align-items: center; font-size: 13px; }
   .break-slots .row .time { font-family: monospace; font-weight: 700; color: var(--btn); min-width: 50px; }
   .break-slots .row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .break-slots .row.empty .nm { color: var(--hint); opacity: 0.5; font-style: italic; }
   /* REQ-3 (2026-05-26): 테이블 칩 */
   .table-chip { display: inline-block; background: var(--bg-sec); border-radius: 8px; padding: 1px 6px; font-size: 11px; font-weight: 600; color: var(--text); margin-left: 4px; opacity: 0.9; }
   /* REDESIGN-1 (2026-05-26): Vacation Range — Ruby Velvet 테마 */
-  .vac-card { background: linear-gradient(135deg, #2a0a14 0%, #3d0d1c 50%, #1a0610 100%); border: 1px solid #4a1422; color: #f4e9d4; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-  .vac-card h2 { color: #f4e9d4; }
-  .vac-card .hint { color: #c5a89a; }
-  .vac-card label { color: #d4b5a4; }
-  .vac-card input, .vac-card select { background: #1a0610; color: #f4e9d4; border: 1px solid #4a1422; }
-  .vac-card button.btn { background: #d4a85a; color: #1a0610; }
-  .vac-card button.ghost { background: transparent; color: #d4b5a4; border-color: #4a1422; }
-  .vac-card .range { color: #f4e9d4; font-weight: 600; }
+  .ruby-card { background: linear-gradient(135deg, #2a0a14 0%, #3d0d1c 50%, #1a0610 100%); border: 1px solid #4a1422; color: #f4e9d4; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  .ruby-card h2 { color: #f4e9d4; }
+  .ruby-card .hint { color: #c5a89a; }
+  .ruby-card label { color: #d4b5a4; }
+  .ruby-card input, .ruby-card select { background: #1a0610; color: #f4e9d4; border: 1px solid #4a1422; }
+  .ruby-card button.btn { background: #d4a85a; color: #1a0610; }
+  .ruby-card button.ghost { background: transparent; color: #d4b5a4; border-color: #4a1422; }
+  .ruby-card .range { color: #f4e9d4; font-weight: 600; }
   /* 총계 칩 */
   .vac-totals { display: flex; gap: 8px; flex-wrap: wrap; }
   .vac-total { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 12px; color: #f4e9d4; }
@@ -310,6 +318,11 @@ const I18N = {
     "toast.super_added":"Slot added","toast.super_deleted":"Slot deleted",
     "breaks.title":"Breaks","breaks.header":"{shift} · {date}",
     "breaks.dealers_active":"{n} dealers active","breaks.dealer_breaks":"Dealer Breaks (auto)",
+    "breaks.attendance_title":"Attendance",
+    "breaks.attendance_total":"Total dealers",
+    "breaks.attendance_people":" people",
+    "breaks.attendance_tables_active":"Tables in operation",
+    "breaks.attendance_tables_idle":"Tables idle",
     "breaks.summary":"{triples} triple + {pairs} pair = {total} dealers",
     "breaks.group_triple":"Group {n} (triple, 20-min cycle)","breaks.group_pair":"Group {n} (pair, 30-min cycle)",
     "breaks.hour_offset":"Hour {h}/8","breaks.recompute":"Recompute","breaks.lock":"Lock","breaks.unlock":"Unlock",
@@ -405,6 +418,11 @@ const I18N = {
     "toast.super_added":"슬롯 추가","toast.super_deleted":"슬롯 삭제",
     "breaks.title":"휴게","breaks.header":"{shift} · {date}",
     "breaks.dealers_active":"출근 딜러 {n}명","breaks.dealer_breaks":"딜러 휴게 (자동)",
+    "breaks.attendance_title":"출근 인원",
+    "breaks.attendance_total":"총 인원",
+    "breaks.attendance_people":"명",
+    "breaks.attendance_tables_active":"운영 테이블",
+    "breaks.attendance_tables_idle":"미운영 테이블",
     "breaks.summary":"triple {triples} + pair {pairs} = {total}명",
     "breaks.group_triple":"묶음 {n} (3인, 20분 순환)","breaks.group_pair":"묶음 {n} (2인, 30분 순환)",
     "breaks.hour_offset":"시간 {h}/8","breaks.recompute":"재계산","breaks.lock":"잠금","breaks.unlock":"잠금 해제",
@@ -1168,13 +1186,39 @@ function renderBreaks_(user) {
       const typeChip = g.type === "triple" ? "triple" : "pair";
       const rows = slotKeys.map(k => {
         const empId = g.slots[k];
-        const info = lookupEmp_(empId);
-        const nameLabel = info ? info.name : (empId || "(empty)");
+        const info = empId ? lookupEmp_(empId) : null;
+        // REQ-7 (2026-05-26): 빈 slot은 — 로 깔끔히
+        const nameLabel = info ? info.name : (empId || "—");
+        const isEmpty = !empId;
         const tm = computeSlotTime_(breaksData.shiftStartTime, k, breaksHourOffset, breaksShift);
-        return `<div class="row"><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(nameLabel)}</span></div>`;
+        return `<div class="row${isEmpty ? " empty" : ""}"><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(nameLabel)}</span></div>`;
       }).join("");
       return `<div class="break-group ${g.type === "pair" ? "pair" : ""}"><div class="gh"><span class="g-tables">${escapeHtml(tableLabel)}</span> <span class="g-type">${escapeHtml(typeChip)}</span></div><div class="break-slots">${rows}</div></div>`;
     }).join("");
+  // REQ-7 (2026-05-26): 출근 인원 카드 — 휴게 헤더와 딜러 휴게(자동) 사이에 삽입
+  const activeTables = [];
+  groups.forEach(function(g) {
+    (g.tables || []).forEach(function(tbl) { if (tbl && activeTables.indexOf(tbl) < 0) activeTables.push(tbl); });
+  });
+  const allTables = breaksData.tables || ["C11","C12","C13","C14","C15","C16"];
+  const tablesUsedStr = activeTables.length > 0 ? activeTables.join(", ") : "—";
+  const inactiveTables = allTables.filter(function(tbl) { return activeTables.indexOf(tbl) < 0; });
+  const inactiveStr = inactiveTables.length > 0 ? inactiveTables.join(", ") : "";
+  const attendanceCard = `<div class="card attendance-card">
+    <h2>${t("breaks.attendance_title")}</h2>
+    <div class="attendance-row">
+      <span class="att-label">${t("breaks.attendance_total")}</span>
+      <span class="att-value">${breaksData.presentDealerCount || 0}${t("breaks.attendance_people")}</span>
+    </div>
+    <div class="attendance-row">
+      <span class="att-label">${t("breaks.attendance_tables_active")}</span>
+      <span class="att-value tables">${escapeHtml(tablesUsedStr)}</span>
+    </div>
+    ${inactiveStr ? `<div class="attendance-row">
+      <span class="att-label">${t("breaks.attendance_tables_idle")}</span>
+      <span class="att-value tables idle">${escapeHtml(inactiveStr)}</span>
+    </div>` : ""}
+  </div>`;
   const dealerBreaksHtml = `<div class="card"><h2>${t("breaks.dealer_breaks")}</h2>${hourChips}${groupsHtml}</div>`;
   const sbsByEmp = {};
   (breaksData.supervisorBreaks || []).forEach(b => { if (!sbsByEmp[b.supervisorId]) sbsByEmp[b.supervisorId] = []; sbsByEmp[b.supervisorId].push(b); });
@@ -1191,7 +1235,7 @@ function renderBreaks_(user) {
     return `<div class="super-card"><div class="sn">${escapeHtml(name)}${supExtraStr ? `<span class="hint" style="font-weight:400; font-size:11px; margin-left:6px;">${supExtraStr}</span>` : ""}</div><div class="super-chips">${chips}</div>${isAdmin ? `<div class="super-add"><input type="time" data-super-time="${escapeHtml(s.id)}" value=""><input type="number" data-super-min="${escapeHtml(s.id)}" value="10" min="5" max="240" step="5"><span class="hint" style="font-size:11px;">m</span><button data-super-add="${escapeHtml(s.id)}">${t("breaks.add_slot")}</button></div>` : ""}</div>`;
   }).join("");
   const supervisorHtml = `<div class="card"><h2>${t("breaks.supervisor_breaks")}</h2>${supervisorCards || `<p class="hint">${t("breaks.no_slots")}</p>`}</div>`;
-  return shiftTabHtml + dealerBreaksHtml + supervisorHtml;
+  return shiftTabHtml + attendanceCard + dealerBreaksHtml + supervisorHtml;
 }
 
 function computeSlotTime_(shiftStart, slotKey, hourOffset, shift) {
@@ -1326,8 +1370,9 @@ function findMyGroup_(userId, breaksData) {
 }
 
 function renderMy_(user) {
-  if (myLoading && !myData) return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
-  if (!myData) return `<div class="card"><p class="hint">${t("toast.action_failed", { msg: "load failed" })}</p></div>`;
+  // REQ-8 (2026-05-26): 직원 모드 전체에 Ruby Velvet 적용
+  if (myLoading && !myData) return `<div class="card ruby-card"><p class="hint">${t("common.loading")}</p></div>`;
+  if (!myData) return `<div class="card ruby-card"><p class="hint">${t("toast.action_failed", { msg: "load failed" })}</p></div>`;
 
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
   // REQ-2/REQ-3: 부제에 국적 + 테이블 추가
