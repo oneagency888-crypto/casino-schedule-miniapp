@@ -384,11 +384,15 @@ async function apiPost(action, body) {
 
 // ────────────────────────────────────────────────────────────
 // C-1(d) (2026-05-26): 클라이언트 메모리 캐시 — 60s TTL
-// 같은 화면 재진입(예: 본인 화면 ↔ 홈) 시 네트워크 0.
+// P2-2 (2026-05-26): Stale-while-revalidate — 만료된 캐시도 즉시 반환 + 백그라운드 fresh
+// P2-3 (2026-05-26): localStorage 영속 — 세션 재시작해도 직전 데이터 즉시
 // 쓰기 액션 발생 시 invalidateCache(prefix)로 명시 무효화.
 // ────────────────────────────────────────────────────────────
-const READ_CACHE_TTL_MS = 60 * 1000;
-const readCache = new Map();  // key → { expires, value }
+const READ_CACHE_TTL_MS = 60 * 1000;       // 신선도 기준 (60초 이내면 fresh)
+const READ_CACHE_MAX_AGE_MS = 60 * 60 * 1000;  // SWR/localStorage 최대 유효 (1시간)
+const LS_CACHE_PREFIX = "scheduleApp.cache.v1.";
+const LS_CACHE_MAX_KEYS = 30;  // 용량 제한
+const readCache = new Map();  // key → { expires, value, fetchedAt }
 
 function cacheKey_(action, paramsObj) {
   const keys = paramsObj ? Object.keys(paramsObj).sort() : [];
@@ -396,21 +400,109 @@ function cacheKey_(action, paramsObj) {
   return action + "?" + parts.join("&");
 }
 
-async function apiGetCached(action, extraParams, ttlMs) {
+// P2-3: localStorage → 메모리 캐시 복원 (boot 시 1회)
+function hydrateCacheFromStorage_() {
+  try {
+    const now = Date.now();
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || k.indexOf(LS_CACHE_PREFIX) !== 0) continue;
+      const raw = localStorage.getItem(k);
+      if (!raw) continue;
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.value || !obj.fetchedAt) continue;
+      if (now - obj.fetchedAt > READ_CACHE_MAX_AGE_MS) {
+        try { localStorage.removeItem(k); } catch (e) {}
+        continue;
+      }
+      readCache.set(k.substring(LS_CACHE_PREFIX.length), {
+        expires: obj.fetchedAt + READ_CACHE_TTL_MS,
+        value: obj.value,
+        fetchedAt: obj.fetchedAt
+      });
+    }
+  } catch (e) { /* localStorage 사용 불가 환경 — 무시 */ }
+}
+
+function persistCacheKey_(key, value) {
+  try {
+    const entry = { value: value, fetchedAt: Date.now() };
+    localStorage.setItem(LS_CACHE_PREFIX + key, JSON.stringify(entry));
+    // 용량 cap: 가장 오래된 키부터 제거
+    const cacheKeys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf(LS_CACHE_PREFIX) === 0) cacheKeys.push(k);
+    }
+    if (cacheKeys.length > LS_CACHE_MAX_KEYS) {
+      const items = cacheKeys.map(k => {
+        try { const v = JSON.parse(localStorage.getItem(k) || "{}"); return { k, ts: v.fetchedAt || 0 }; }
+        catch (e) { return { k, ts: 0 }; }
+      });
+      items.sort((a, b) => a.ts - b.ts);
+      for (let i = 0; i < items.length - LS_CACHE_MAX_KEYS; i++) {
+        try { localStorage.removeItem(items[i].k); } catch (e) {}
+      }
+    }
+  } catch (e) { /* quota / private mode — 무시 */ }
+}
+
+// P2-2: SWR — 만료된 캐시도 즉시 반환 + 백그라운드 refresh
+// onUpdate(freshValue): 백그라운드 응답이 도착해서 캐시가 갱신됐을 때 호출 (옵션)
+async function apiGetCached(action, extraParams, opts) {
+  opts = opts || {};
   const key = cacheKey_(action, extraParams);
   const now = Date.now();
   const hit = readCache.get(key);
+
+  // 캐시 hit (fresh) → 즉시 반환, fetch 없음
   if (hit && hit.expires > now) return hit.value;
+
+  // 캐시 hit (stale, 단 MAX_AGE 이내) → 즉시 반환 + 백그라운드 refresh
+  if (hit && hit.fetchedAt && (now - hit.fetchedAt) < READ_CACHE_MAX_AGE_MS && !opts.forceFresh) {
+    // 백그라운드 fetch
+    apiGet(action, extraParams).then(r => {
+      if (r && r.ok) {
+        const entry = { expires: Date.now() + READ_CACHE_TTL_MS, value: r, fetchedAt: Date.now() };
+        readCache.set(key, entry);
+        persistCacheKey_(key, r);
+        if (typeof opts.onUpdate === "function") {
+          try { opts.onUpdate(r); } catch (e) {}
+        }
+      }
+    }).catch(() => {});
+    return hit.value;
+  }
+
+  // 캐시 없음 또는 너무 오래됨 → 동기 fetch
   const r = await apiGet(action, extraParams);
-  // 성공 응답만 캐시
-  if (r && r.ok) readCache.set(key, { expires: now + (ttlMs || READ_CACHE_TTL_MS), value: r });
+  if (r && r.ok) {
+    const entry = { expires: now + READ_CACHE_TTL_MS, value: r, fetchedAt: now };
+    readCache.set(key, entry);
+    persistCacheKey_(key, r);
+  }
   return r;
 }
 
 function invalidateCache(prefix) {
-  if (!prefix) { readCache.clear(); return; }
+  if (!prefix) {
+    readCache.clear();
+    // localStorage도 같이
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf(LS_CACHE_PREFIX) === 0) keys.push(k);
+      }
+      keys.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+    } catch (e) {}
+    return;
+  }
   for (const k of Array.from(readCache.keys())) {
-    if (k.indexOf(prefix) === 0) readCache.delete(k);
+    if (k.indexOf(prefix) === 0) {
+      readCache.delete(k);
+      try { localStorage.removeItem(LS_CACHE_PREFIX + k); } catch (e) {}
+    }
   }
 }
 
@@ -635,9 +727,17 @@ function bindSearchInput() {
 
 async function triggerSearch() {
   searchLoading = true; updateSearchUI_();
+  const _params = { q: searchQuery, shift: searchFilters.shift, category: searchFilters.category, active: searchFilters.active, limit: 50, offset: 0 };
   try {
-    // C-1(d): 60s 캐시 (같은 검색 재진입 시 네트워크 0)
-    const r = await apiGetCached("searchStaff", { q: searchQuery, shift: searchFilters.shift, category: searchFilters.category, active: searchFilters.active, limit: 50, offset: 0 });
+    // C-1(d) 캐시 + P2-2 SWR: stale 캐시 즉시 반환 + 백그라운드 갱신 시 자동 UI 새로고침
+    const r = await apiGetCached("searchStaff", _params, {
+      onUpdate: (fresh) => {
+        // 사용자가 같은 검색어 상태에 있을 때만 갱신
+        if (cacheKey_("searchStaff", _params) === cacheKey_("searchStaff", { q: searchQuery, shift: searchFilters.shift, category: searchFilters.category, active: searchFilters.active, limit: 50, offset: 0 })) {
+          if (fresh.data) { searchResults = fresh.data.items || []; searchTotal = fresh.data.total || 0; updateSearchUI_(); }
+        }
+      }
+    });
     if (r && r.ok && r.data) { searchResults = r.data.items || []; searchTotal = r.data.total || 0; }
     else { searchResults = []; searchTotal = 0; showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" })); }
   } catch (err) { searchResults = []; searchTotal = 0; showToast(t("toast.action_failed", { msg: err.message || err })); }
@@ -670,8 +770,14 @@ async function openCalendar(staffId, staffName) {
   selectedStaff = { id: staffId, name: staffName };
   currentScreen = SCREEN_CALENDAR; staffDetail = null; render();
   try {
-    // C-1(d) 캐시: 같은 직원 + anchor 재진입 시 네트워크 0
-    const r = await apiGetCached("getStaffDetail", { employeeId: staffId, anchor: currentAnchor });
+    // C-1(d) 캐시 + P2-2 SWR
+    const r = await apiGetCached("getStaffDetail", { employeeId: staffId, anchor: currentAnchor }, {
+      onUpdate: (fresh) => {
+        if (selectedStaff && selectedStaff.id === staffId && currentScreen === SCREEN_CALENDAR) {
+          if (fresh.data) { staffDetail = fresh.data; render(); }
+        }
+      }
+    });
     if (r && r.ok && r.data) staffDetail = r.data;
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
@@ -765,9 +871,16 @@ async function openBreaks() {
 
 async function loadBreaks_() {
   breaksLoading = true; render();
+  const _d = breaksDate, _s = breaksShift;
   try {
-    // C-1(d) 캐시: 같은 date+shift 재진입 시 네트워크 0
-    const r = await apiGetCached("getBreaks", { date: breaksDate, shift: breaksShift });
+    // C-1(d) 캐시 + P2-2 SWR
+    const r = await apiGetCached("getBreaks", { date: _d, shift: _s }, {
+      onUpdate: (fresh) => {
+        if (currentScreen === SCREEN_BREAKS && breaksDate === _d && breaksShift === _s) {
+          if (fresh.data) { breaksData = fresh.data; render(); }
+        }
+      }
+    });
     if (r && r.ok && r.data) breaksData = r.data;
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
@@ -890,11 +1003,23 @@ async function loadMyData_() {
   try {
     // C-1(c) (2026-05-26): 3개 API → 1개 통합 호출 getMyView.
     //   서버에서 Promise.all로 직렬화되던 3-fetch 제거.
-    // C-1(d): 60s 캐시. 같은 anchor+shift 재진입 시 네트워크 0.
-    const r = await apiGetCached("getMyView", {
-      employeeId: user.id,
-      anchor: myAnchor,
-      shift: user.defaultShift
+    // C-1(d): 60s 캐시. P2-2 SWR: stale도 즉시 + 백그라운드 갱신.
+    const _a = myAnchor, _s = user.defaultShift;
+    const r = await apiGetCached("getMyView", { employeeId: user.id, anchor: _a, shift: _s }, {
+      onUpdate: (fresh) => {
+        if (currentScreen === SCREEN_MY && myAnchor === _a) {
+          const v = (fresh && fresh.data) || null;
+          if (!v) return;
+          const rawMap = v.nameMap || {};
+          const nameMap = {};
+          Object.keys(rawMap).forEach(id => {
+            const vv = rawMap[id] || {};
+            nameMap[id] = (LANG === "ko" && vv.ko) ? vv.ko : (vv.en || id);
+          });
+          myData = { anchor: v.anchor, dayStates: v.dayStates, breaksData: v.breaks || null, nameMap };
+          render();
+        }
+      }
     });
     if (!r || !r.ok) throw new Error((r && r.error && r.error.message_en) || "getMyView failed");
     // nameMap: 서버에서 { id: {en, ko} } → 클라에서 언어별 단일 문자열 변환
@@ -1313,8 +1438,13 @@ async function boot() {
   if (tg) { try { tg.ready(); tg.expand(); } catch (e) {} }
   setLang(detectInitialLang());
   document.getElementById("loading-text").textContent = t("common.loading");
+
+  // P2-3 (2026-05-26): localStorage → 메모리 캐시 복원 (네트워크 0)
+  hydrateCacheFromStorage_();
+
   try {
-    const r = await apiGet("ping");
+    // P2-1 (2026-05-26): getBoot — ping + 첫 화면 데이터 한 응답
+    const r = await apiGet("getBoot");
     if (!r || !r.ok) {
       const code = (r && r.error && r.error.code) || "INTERNAL";
       const msg = (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || t("error.internal");
@@ -1324,20 +1454,56 @@ async function boot() {
     if (!saved && r.lang) setLang(r.lang);
     bootData = r.data;
     loadPersistedState(bootData.user);
-    // viewer는 자동으로 화면 5 진입
+
+    // P2-1: admin이면 initialSearch를 캐시에 미리 seed → Find Dealer 클릭 즉시
+    if (bootData.user.isAdmin && bootData.initialSearch) {
+      seedSearchCacheFromBoot_(bootData.initialSearch);
+    }
+    // P2-1: viewer면 myView 즉시 노출 (추가 fetch 없이)
+    if (!bootData.user.isAdmin && bootData.myView) {
+      const v = bootData.myView;
+      const rawMap = v.nameMap || {};
+      const nameMap = {};
+      Object.keys(rawMap).forEach(id => {
+        const vv = rawMap[id] || {};
+        nameMap[id] = (LANG === "ko" && vv.ko) ? vv.ko : (vv.en || id);
+      });
+      myData = { anchor: v.anchor, dayStates: v.dayStates, breaksData: v.breaks || null, nameMap };
+      myAnchor = v.anchor || myAnchor;
+    }
+
     if (!bootData.user.isAdmin) {
       currentScreen = SCREEN_MY;
       bindEvents();
-      openMy();
+      // myData가 이미 있으면 render만, 없으면 openMy로 폴백
+      if (myData) render(); else openMy();
     } else {
       currentScreen = SCREEN_HOME;
       render();
       bindEvents();
+      // P2-5: 백그라운드 prefetch (홈 그리기 끝난 뒤)
+      schedulePrefetch_();
     }
   } catch (err) {
     if (err && err.name === "AbortError") showAuthError("TIMEOUT", t("error.network") + " (timeout)");
     else showAuthError("NETWORK", t("error.network") + " — " + (err && err.message ? err.message : err));
   }
+}
+
+// P2-1: getBoot.initialSearch를 캐시에 seed → 첫 Find Dealer 클릭 시 fetch 0회
+function seedSearchCacheFromBoot_(initial) {
+  const key = cacheKey_("searchStaff", { q: "", shift: "all", category: "all", active: "true", limit: 50, offset: 0 });
+  const value = { ok: true, data: initial, lang: LANG };
+  readCache.set(key, { expires: Date.now() + READ_CACHE_TTL_MS, value: value });
+  persistCacheKey_(key, value);
+}
+
+// P2-5: boot 후 백그라운드 prefetch — 자주 진입하는 화면만 가볍게
+function schedulePrefetch_() {
+  setTimeout(() => {
+    // listShiftCycles — Shift Cycle 진입 즉시 캐시 hit
+    apiGetCached("listShiftCycles").catch(() => {});
+  }, 400);  // 홈 렌더 완료 후 400ms
 }
 
 function bindEvents() {
