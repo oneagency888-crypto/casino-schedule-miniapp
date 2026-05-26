@@ -1,0 +1,11 @@
+.env
+credentials/
+*.json
+__pycache__/
+*.pyc
+.venv/
+venv/
+.python-version
+.vscode/
+.idea/
+.DS_Store
