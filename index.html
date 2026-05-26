@@ -117,6 +117,8 @@
   .break-slots .row { display: flex; gap: 8px; align-items: center; font-size: 13px; }
   .break-slots .row .time { font-family: monospace; font-weight: 700; color: var(--btn); min-width: 50px; }
   .break-slots .row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* REQ-3 (2026-05-26): 테이블 칩 */
+  .table-chip { display: inline-block; background: var(--bg-sec); border-radius: 8px; padding: 1px 6px; font-size: 11px; font-weight: 600; color: var(--text); margin-left: 4px; opacity: 0.9; }
   .hours-strip { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
   .hour-chip { padding: 3px 8px; border-radius: 10px; font-size: 11px; font-family: monospace; background: var(--bg-sec); color: var(--text); cursor: pointer; }
   .hour-chip.active { background: var(--btn); color: var(--btn-text); font-weight: 700; }
@@ -222,7 +224,7 @@ const I18N = {
     "boot.role_admin":"Administrator","boot.role_viewer":"View only",
     "boot.connected":"Connected ✓","boot.legend":"Legend",
     "placeholder.coming_in":"Coming in Stage {n}.",
-    "placeholder.vacation_range.desc":"Open from a dealer calendar (Find Dealer → tap card).",
+    "placeholder.vacation_range.desc":"Tap a dealer card → vacation form in the calendar.",
     "placeholder.shift_cycle.desc":"Create / end shift cycles.",
     "placeholder.add_staff.desc":"Add new dealer/supervisor + Telegram ID mapping.",
     "placeholder.backup.desc":"Spreadsheet auto backup (weekly).",
@@ -233,7 +235,7 @@ const I18N = {
     "search.status_working":"working",
     "calendar.set_vacation_range":"Set vacation range","calendar.from":"From","calendar.to":"To",
     "calendar.apply_vacation":"Apply Vacation","calendar.viewer_locked":"View only — admin must edit.",
-    "calendar.cell_help":"Tap cell to cycle: work → VAC → OFF → PRE → SPL → work.",
+    "calendar.cell_help":"Tap cell to cycle: work → OFF → VAC → PRE → SPL → work.",
     "calendar.no_pending":"No pending changes",
     "calendar.applying":"Applying {n} change(s)…",
     "calendar.applied_ok":"{ok} change(s) applied",
@@ -268,6 +270,7 @@ const I18N = {
     "staff.field_name_en":"English name","staff.field_name_ko":"Korean name (optional)",
     "staff.field_role":"Role","staff.field_shift":"Default shift",
     "staff.field_join":"Join date","staff.field_telegram":"Telegram ID (optional)",
+    "staff.field_nationality":"Nationality","staff.field_table":"Default table",
     "staff.confirm_leave":"Mark {name} as left today?",
     "toast.staff_added":"Staff added","toast.staff_updated":"Updated","toast.staff_left":"Marked as left","toast.staff_restored":"Restored",
     "cycle.title":"Shift Cycle","cycle.list_title":"Cycles",
@@ -309,7 +312,7 @@ const I18N = {
     "boot.role_admin":"관리자","boot.role_viewer":"보기 전용",
     "boot.connected":"연결됨 ✓","boot.legend":"색상 범례",
     "placeholder.coming_in":"{n}단계에서 활성화됩니다.",
-    "placeholder.vacation_range.desc":"딜러 찾기 → 카드 탭 후 캘린더에서 입력.",
+    "placeholder.vacation_range.desc":"딜러 카드 탭 → 캘린더에서 휴가 범위 설정.",
     "placeholder.shift_cycle.desc":"시프트 사이클 생성/종료.",
     "placeholder.add_staff.desc":"신규 딜러/슈퍼바이저 추가 + 텔레그램 ID 매핑.",
     "placeholder.backup.desc":"스프레드시트 자동 백업 (주1회).",
@@ -320,7 +323,7 @@ const I18N = {
     "search.status_working":"출근",
     "calendar.set_vacation_range":"휴가 범위 설정","calendar.from":"시작","calendar.to":"종료",
     "calendar.apply_vacation":"휴가 적용","calendar.viewer_locked":"보기 전용 — 수정은 관리자에게.",
-    "calendar.cell_help":"셀 탭으로 순환: 출근 → VAC → OFF → PRE → SPL → 출근.",
+    "calendar.cell_help":"셀 탭으로 순환: 출근 → OFF → VAC → PRE → SPL → 출근.",
     "calendar.no_pending":"적용할 변경이 없습니다",
     "calendar.applying":"{n}개 변경 적용 중…",
     "calendar.applied_ok":"{ok}개 변경 적용됨",
@@ -355,6 +358,7 @@ const I18N = {
     "staff.field_name_en":"영문 이름","staff.field_name_ko":"한글 이름 (선택)",
     "staff.field_role":"역할","staff.field_shift":"기본 시프트",
     "staff.field_join":"입사일","staff.field_telegram":"텔레그램 ID (선택)",
+    "staff.field_nationality":"국적","staff.field_table":"기본 테이블",
     "staff.confirm_leave":"{name}을(를) 오늘부로 퇴사 처리할까요?",
     "toast.staff_added":"인원 추가됨","toast.staff_updated":"갱신됨","toast.staff_left":"퇴사 처리됨","toast.staff_restored":"재직 복원됨",
     "cycle.title":"시프트 사이클","cycle.list_title":"사이클 목록",
@@ -567,7 +571,7 @@ const SCREEN_MY = "my";
 const SCREEN_STAFF = "staff";
 const SCREEN_CYCLE = "shift_cycle";  // M-4 (2026-05-26): placeholder → 실제 화면
 const PLACEHOLDER_SCREENS = {
-  "vacation_range": { emo: "📅", titleKey: "home.vacation_range", descKey: "placeholder.vacation_range.desc", stage: 5 },
+  // REQ-5 (2026-05-26): vacation_range는 placeholder가 아니라 Find Dealer로 직접 이동.
   "backup":         { emo: "📤", titleKey: "home.backup",         descKey: "placeholder.backup.desc",         stage: 10 }
 };
 
@@ -709,20 +713,12 @@ function renderShiftAndAnchor_() {
 }
 
 function renderAdminHome_(user) {
+  // REQ-1 (2026-05-26): 관리자 홈에서 시프트뷰/색상 범례/내휴게보기 제거. Welcome + Quick Actions만.
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
       <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p>
-      <button class="btn ghost small" data-nav="${SCREEN_MY}" style="margin-top:8px;">👁 ${t("home.my_view")}</button>
     </div>
-    ${renderShiftAndAnchor_()}
-    <div class="card"><h2>${t("boot.legend")}</h2>
-      <div class="legend">
-        <span class="legend-item"><span class="swatch" style="background:var(--vac)"></span>${t("state.vacation.short")} · ${t("state.vacation.full")}</span>
-        <span class="legend-item"><span class="swatch" style="background:var(--off)"></span>${t("state.dayoff.short")} · ${t("state.dayoff.full")}</span>
-        <span class="legend-item"><span class="swatch" style="background:var(--pre)"></span>${t("state.pre_practice.short")} · ${t("state.pre_practice.full")}</span>
-        <span class="legend-item"><span class="swatch" style="background:var(--spl)"></span>${t("state.special.short")} · ${t("state.special.full")}</span>
-      </div></div>
     <div class="card"><h2>${t("home.quick_actions")}</h2>
       <div class="btn-row">
         <button class="btn" data-nav="${SCREEN_FIND_DEALER}"><span class="emo">👤</span>${t("home.find_dealer")}</button>
@@ -809,7 +805,11 @@ function updateSearchUI_() {
 
 function renderStaffCard_(s) {
   const name = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id);
-  const sub = (s.category === "dealer" ? "🃏" : "🎯") + " " + escapeHtml(s.category) + " · " + escapeHtml(t("shift." + s.defaultShift + ".full"));
+  // REQ-2/REQ-3: 국적 + 테이블 부제에 추가
+  const extras = [];
+  if (s.nationality) extras.push(escapeHtml(s.nationality));
+  if (s.defaultTable) extras.push(escapeHtml(s.defaultTable));
+  const sub = (s.category === "dealer" ? "🃏" : "🎯") + " " + escapeHtml(s.category) + " · " + escapeHtml(t("shift." + s.defaultShift + ".full")) + (extras.length ? " · " + extras.join(" · ") : "");
   let statusHtml;
   if (s.todayState === "vacation") statusHtml = `<span class="status vac">${t("state.vacation.short")}</span>`;
   else if (s.todayState === "dayoff") statusHtml = `<span class="status off">${t("state.dayoff.short")}</span>`;
@@ -900,7 +900,8 @@ function renderCalendar_(user) {
 // 헤더 ✓ 버튼 누르면 applyPendingChanges()가 일괄 setCellState 호출.
 function toggleCell(date, currentVisualState) {
   if (applyingPending) return;  // 적용 중에는 클릭 무시
-  const order = ["work","vacation","dayoff","pre_practice","special"];
+  // REQ-4 (2026-05-26): 순서 — work → dayoff → vacation → pre_practice → special → work
+  const order = ["work","dayoff","vacation","pre_practice","special"];
   const next = order[(order.indexOf(currentVisualState) + 1) % order.length];
 
   // 서버 원본 상태 조회
@@ -1065,17 +1066,34 @@ function renderBreaks_(user) {
     ${isAdmin ? `<div class="breaks-actions"><button class="btn ghost small" id="breaks-recompute" ${breaksData.locked ? "disabled" : ""}>${t("breaks.recompute")}</button><button class="btn ghost small" id="breaks-lock-toggle">${breaksData.locked ? t("breaks.unlock") : t("breaks.lock")}</button></div>` : ""}
   </div>`;
   const hourChips = `<div class="hours-strip">${[0,1,2,3,4,5,6,7].map(h => `<span class="hour-chip ${breaksHourOffset === h ? "active" : ""}" data-hour-offset="${h}">${escapeHtml(t("breaks.hour_offset", { h: h+1 }))}</span>`).join("")}</div>`;
-  const empIdToName = {};
-  searchResults.forEach(s => { empIdToName[s.id] = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id); });
+  // REQ-3: 서버 employeeInfo 우선, fallback으로 searchResults
+  const empInfoMap = breaksData.employeeInfo || {};
+  const lookupEmp_ = function(empId) {
+    if (!empId) return null;
+    const info = empInfoMap[empId];
+    if (info) {
+      const name = (LANG === "ko" && info.name_ko) ? info.name_ko : (info.name_en || empId);
+      return { name, defaultTable: info.defaultTable || "" };
+    }
+    // fallback (구버전 서버)
+    const s = searchResults.find(x => x.id === empId);
+    if (s) {
+      const name = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || empId);
+      return { name, defaultTable: s.defaultTable || "" };
+    }
+    return { name: empId, defaultTable: "" };
+  };
   const groupsHtml = groups.length === 0 ? `<p class="hint">${t("breaks.no_dealers")}</p>` :
     groups.map((g, i) => {
       const titleKey = g.type === "triple" ? "breaks.group_triple" : "breaks.group_pair";
       const slotKeys = g.type === "triple" ? ["00","20","40"] : ["00","30"];
       const rows = slotKeys.map(k => {
         const empId = g.slots[k];
-        const name = empIdToName[empId] || empId || "(empty)";
+        const info = lookupEmp_(empId);
+        const nameLabel = info ? info.name : (empId || "(empty)");
+        const tableLabel = info && info.defaultTable ? ` <span class="table-chip">${escapeHtml(info.defaultTable)}</span>` : "";
         const tm = computeSlotTime_(breaksData.shiftStartTime, k, breaksHourOffset, breaksShift);
-        return `<div class="row"><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(name)}</span></div>`;
+        return `<div class="row"><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(nameLabel)}${tableLabel}</span></div>`;
       }).join("");
       return `<div class="break-group ${g.type === "pair" ? "pair" : ""}"><div class="gh">${escapeHtml(t(titleKey, { n: i + 1 }))}</div><div class="break-slots">${rows}</div></div>`;
     }).join("");
@@ -1085,9 +1103,14 @@ function renderBreaks_(user) {
   const supervisorCards = (breaksData.supervisors || []).filter(s => s.defaultShift === breaksShift).map(s => {
     const myBreaks = sbsByEmp[s.id] || [];
     const name = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id);
+    // REQ-2/REQ-3: 슈퍼바이저 카드에 국적 + 테이블
+    const supExtras = [];
+    if (s.nationality) supExtras.push(escapeHtml(s.nationality));
+    if (s.defaultTable) supExtras.push(escapeHtml(s.defaultTable));
+    const supExtraStr = supExtras.length ? " · " + supExtras.join(" · ") : "";
     const chips = myBreaks.length === 0 ? `<span class="hint" style="font-size:11px;">${t("breaks.no_slots")}</span>` :
       myBreaks.map(b => `<span class="super-chip">${escapeHtml(b.time)} · ${escapeHtml(String(b.minutes))}m${isAdmin ? `<span class="del" data-super-del="${escapeHtml(b.id)}">×</span>` : ""}</span>`).join("");
-    return `<div class="super-card"><div class="sn">${escapeHtml(name)}</div><div class="super-chips">${chips}</div>${isAdmin ? `<div class="super-add"><input type="time" data-super-time="${escapeHtml(s.id)}" value=""><input type="number" data-super-min="${escapeHtml(s.id)}" value="10" min="5" max="240" step="5"><span class="hint" style="font-size:11px;">m</span><button data-super-add="${escapeHtml(s.id)}">${t("breaks.add_slot")}</button></div>` : ""}</div>`;
+    return `<div class="super-card"><div class="sn">${escapeHtml(name)}${supExtraStr ? `<span class="hint" style="font-weight:400; font-size:11px; margin-left:6px;">${supExtraStr}</span>` : ""}</div><div class="super-chips">${chips}</div>${isAdmin ? `<div class="super-add"><input type="time" data-super-time="${escapeHtml(s.id)}" value=""><input type="number" data-super-min="${escapeHtml(s.id)}" value="10" min="5" max="240" step="5"><span class="hint" style="font-size:11px;">m</span><button data-super-add="${escapeHtml(s.id)}">${t("breaks.add_slot")}</button></div>` : ""}</div>`;
   }).join("");
   const supervisorHtml = `<div class="card"><h2>${t("breaks.supervisor_breaks")}</h2>${supervisorCards || `<p class="hint">${t("breaks.no_slots")}</p>`}</div>`;
   return shiftTabHtml + dealerBreaksHtml + supervisorHtml;
@@ -1229,6 +1252,11 @@ function renderMy_(user) {
   if (!myData) return `<div class="card"><p class="hint">${t("toast.action_failed", { msg: "load failed" })}</p></div>`;
 
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
+  // REQ-2/REQ-3: 부제에 국적 + 테이블 추가
+  const subExtras = [];
+  if (user.nationality) subExtras.push(escapeHtml(user.nationality));
+  if (user.defaultTable) subExtras.push(escapeHtml(user.defaultTable));
+  const subExtraStr = subExtras.length ? " · " + subExtras.join(" · ") : "";
   // VERIFY-1: 데이터 신선도 + 셀 상태별 카운트 (관리자랑 비교 가능)
   let counts = { vac: 0, off: 0, pre: 0, spl: 0 };
   Object.values(myData.dayStates || {}).forEach(c => {
@@ -1248,7 +1276,7 @@ function renderMy_(user) {
     : escapeHtml(t("my.no_cells"));
   const headerCard = `<div class="card">
     <h2>${escapeHtml(name)}</h2>
-    <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("shift." + user.defaultShift + ".time"))}</p>
+    <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("shift." + user.defaultShift + ".time"))}${subExtraStr}</p>
     <p class="hint" style="margin-top:6px; font-size:11px; opacity:0.85;">⟳ ${escapeHtml(t("my.last_updated", { time: fetchedStr }))} · ${summaryStr}</p>
   </div>`;
 
@@ -1396,6 +1424,15 @@ function renderStaff_(user) {
       <div><label>${t("staff.field_join")}</label><input type="date" id="new-join" value="${todayIso()}"></div>
       <div><label>${t("staff.field_telegram")}</label><input type="text" id="new-tgid" placeholder="0"></div>
     </div>
+    <div class="row2" style="margin-top:6px;">
+      <div><label>${t("staff.field_nationality")}</label><input type="text" id="new-nationality" placeholder="KR / PH / EN ..."></div>
+      <div><label>${t("staff.field_table")}</label>
+        <select id="new-table">
+          <option value="">—</option>
+          ${((bootData && bootData.tables) || []).map(tbl => `<option value="${escapeHtml(tbl)}">${escapeHtml(tbl)}</option>`).join("")}
+        </select>
+      </div>
+    </div>
     <button class="btn" id="new-save" style="margin-top:10px; width:100%;">${t("staff.save")}</button>
   </div></div>` : "";
 
@@ -1445,6 +1482,15 @@ function renderStaffEditForm_(s) {
         </div>
       </div>
       <div><label>${t("staff.field_telegram")}</label><input type="text" data-edit-tgid value="${escapeHtml(s.telegramUserId || "")}"></div>
+      <div class="row2">
+        <div><label>${t("staff.field_nationality")}</label><input type="text" data-edit-nationality value="${escapeHtml(s.nationality || "")}" placeholder="KR / PH / EN ..."></div>
+        <div><label>${t("staff.field_table")}</label>
+          <select data-edit-table>
+            <option value="">—</option>
+            ${((bootData && bootData.tables) || []).map(tbl => `<option value="${escapeHtml(tbl)}" ${s.defaultTable === tbl ? "selected" : ""}>${escapeHtml(tbl)}</option>`).join("")}
+          </select>
+        </div>
+      </div>
       <div class="actions">
         <button class="btn" data-staff-save="${escapeHtml(s.id)}">${t("staff.save")}</button>
         <button class="btn ghost" data-staff-cancel-edit="1">${t("staff.cancel")}</button>
@@ -1461,8 +1507,13 @@ async function addStaffSubmit() {
   const defaultShift = document.getElementById("new-shift").value;
   const joinDate = document.getElementById("new-join").value;
   const telegramUserId = document.getElementById("new-tgid").value.trim();
+  // REQ-2/REQ-3
+  const natEl = document.getElementById("new-nationality");
+  const tblEl = document.getElementById("new-table");
+  const nationality = natEl ? natEl.value.trim() : "";
+  const defaultTable = tblEl ? tblEl.value : "";
   try {
-    const r = await apiPost("addStaff", { name_en, name_ko, category, defaultShift, joinDate, telegramUserId });
+    const r = await apiPost("addStaff", { name_en, name_ko, category, defaultShift, joinDate, telegramUserId, nationality, defaultTable });
     invalidateCache();  // 직원 추가는 전체 캐시 영향 (search/staff/my)
     if (r && r.ok && r.data) {
       showToast(t("toast.staff_added"));
@@ -1479,7 +1530,10 @@ async function saveStaffEdit(id) {
     name_en: card.querySelector("[data-edit-name-en]").value.trim(),
     name_ko: card.querySelector("[data-edit-name-ko]").value.trim(),
     category: card.querySelector("[data-edit-category]").value,
-    defaultShift: card.querySelector("[data-edit-shift]").value
+    defaultShift: card.querySelector("[data-edit-shift]").value,
+    // REQ-2/REQ-3: 항상 보냄 (빈 값 = 명시적으로 비움)
+    nationality: (card.querySelector("[data-edit-nationality]") || {}).value || "",
+    defaultTable: (card.querySelector("[data-edit-table]") || {}).value || ""
   };
   // BUG-1 (2026-05-26): TG ID 입력란이 비어있으면 body에 포함 안 함 → 기존 값 보존.
   // 명시적으로 비우려면 별도 UI 필요(후속). 빈 값 = "건드리지 마" 시맨틱.
@@ -1780,6 +1834,12 @@ function bindEvents() {
         if (navBtn.dataset.nav === SCREEN_MY) { openMy(); return; }
         if (navBtn.dataset.nav === SCREEN_STAFF) { openStaffMgmt(); return; }
         if (navBtn.dataset.nav === SCREEN_CYCLE) { openCycleMgmt(); return; }
+        // REQ-5 (2026-05-26): Vacation Range → Find Dealer로 이동 + 안내
+        if (navBtn.dataset.nav === "vacation_range") {
+          navigate(SCREEN_FIND_DEALER);
+          showToast(t("placeholder.vacation_range.desc"), 3500);
+          return;
+        }
         navigate(navBtn.dataset.nav); return;
       }
       const shiftBtn = e.target.closest("[data-shift]");
@@ -1874,3 +1934,4 @@ document.addEventListener("DOMContentLoaded", boot);
 
 </body>
 </html>
+
