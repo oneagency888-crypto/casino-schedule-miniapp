@@ -1293,9 +1293,12 @@ async function saveStaffEdit(id) {
     name_en: card.querySelector("[data-edit-name-en]").value.trim(),
     name_ko: card.querySelector("[data-edit-name-ko]").value.trim(),
     category: card.querySelector("[data-edit-category]").value,
-    defaultShift: card.querySelector("[data-edit-shift]").value,
-    telegramUserId: card.querySelector("[data-edit-tgid]").value.trim()
+    defaultShift: card.querySelector("[data-edit-shift]").value
   };
+  // BUG-1 (2026-05-26): TG ID 입력란이 비어있으면 body에 포함 안 함 → 기존 값 보존.
+  // 명시적으로 비우려면 별도 UI 필요(후속). 빈 값 = "건드리지 마" 시맨틱.
+  const tgidVal = card.querySelector("[data-edit-tgid]").value.trim();
+  if (tgidVal) body.telegramUserId = tgidVal;
   try {
     const r = await apiPost("updateStaff", body);
     invalidateCache();
