@@ -929,34 +929,69 @@ function updateApplyButton_() {
   btn.disabled = applyingPending;
 }
 
+// OVERRIDE-1 (2026-05-26): 4주 atomic overwrite.
+// 관리자가 화면에서 보는 4주 전체(staffDetail.dayStates + pendingCellChanges 머지)를
+// 서버에 통째로 덮어씌움. 1 round-trip. 옛 row + 외부 변경 모두 강제 정렬.
 async function applyPendingChanges() {
-  const entries = Object.entries(pendingCellChanges);
-  if (entries.length === 0) { showToast(t("calendar.no_pending"), 1500); return; }
   if (!selectedStaff) return;
+  const pendingCount = Object.keys(pendingCellChanges).length;
+  if (pendingCount === 0) { showToast(t("calendar.no_pending"), 1500); return; }
+
   applyingPending = true;
   updateApplyButton_();
-  showToast(t("calendar.applying", { n: entries.length }), 2000);
-  let ok = 0, fail = 0;
-  for (const [date, state] of entries) {
-    try {
-      const r = await apiPost("setCellState", { date, employeeId: selectedStaff.id, state, pinned: state !== "work" });
-      if (r && r.ok) ok++; else fail++;
-    } catch (e) { fail++; }
+  showToast(t("calendar.applying", { n: pendingCount }), 2000);
+
+  // 4주 anchor 결정 — 서버가 알아본 anchor 우선
+  const anchorIso = (staffDetail && staffDetail.anchor) || currentAnchor;
+  const endIso = fmtDate(addDays(parseDate(anchorIso), 27));
+
+  // 28일 effective state 산출 (admin이 지금 보는 그대로)
+  const entries = [];
+  for (let i = 0; i < 28; i++) {
+    const iso = fmtDate(addDays(parseDate(anchorIso), i));
+    const serverCell = (staffDetail && staffDetail.dayStates) ? staffDetail.dayStates[iso] : null;
+    const serverState = serverCell ? serverCell.state : "work";
+    const effective = Object.prototype.hasOwnProperty.call(pendingCellChanges, iso)
+      ? pendingCellChanges[iso] : serverState;
+    entries.push({
+      date: iso,
+      state: effective,
+      pinned: effective !== "work"
+    });
   }
+
+  let success = false, errMsg = "";
+  try {
+    const r = await apiPost("setEmployeeSchedule", {
+      employeeId: selectedStaff.id,
+      startDate: anchorIso,
+      endDate: endIso,
+      entries: entries
+    });
+    if (r && r.ok) success = true;
+    else errMsg = (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?";
+  } catch (e) {
+    errMsg = e && e.message ? e.message : String(e);
+  }
+
   invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks");
   pendingCellChanges = {};
   applyingPending = false;
+
   // fresh fetch로 결과 확인
   try {
-    const r = await apiGetCached("getStaffDetail", { employeeId: selectedStaff.id, anchor: currentAnchor }, { forceFresh: true });
-    if (r && r.ok && r.data) staffDetail = r.data;
+    const r2 = await apiGetCached("getStaffDetail", { employeeId: selectedStaff.id, anchor: anchorIso }, { forceFresh: true });
+    if (r2 && r2.ok && r2.data) staffDetail = r2.data;
   } catch (e) {}
+
   render();
   updateApplyButton_();
-  const msg = fail === 0
-    ? t("calendar.applied_ok", { ok: ok })
-    : t("calendar.applied_partial", { ok: ok, fail: fail });
-  showToast(msg, 3000);
+
+  if (success) {
+    showToast(t("calendar.applied_ok", { ok: pendingCount }), 3000);
+  } else {
+    showToast(t("toast.action_failed", { msg: errMsg }), 3500);
+  }
 }
 
 function discardPendingChanges_() {
