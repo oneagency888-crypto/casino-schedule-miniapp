@@ -176,6 +176,22 @@
   .vac-cell.streak-next { border-top-right-radius: 0; border-bottom-right-radius: 0; margin-right: -4px; padding-right: 6px; }
   /* 오늘 표시 — 금색 글로우 */
   .vac-cell.today { box-shadow: 0 0 0 2px #d4a85a, 0 0 12px rgba(212, 168, 90, 0.6); z-index: 1; }
+  /* REQ-8 (2026-05-26): Ruby Velvet 카드 안의 day-cell / my-break-row 가독성 보완 */
+  /* state 없는 (work) 셀만 어두운 배경. VAC/OFF/PRE/SPL 셀은 자체 색상 유지. */
+  .ruby-card .day-cell:not(.vac):not(.off):not(.pre):not(.spl) { background: rgba(0,0,0,0.35); border: 1px solid #4a1422; color: #f4e9d4; }
+  .ruby-card .day-cell:not(.vac):not(.off):not(.pre):not(.spl) .d { color: #f4e9d4; }
+  .ruby-card .day-cell.today { outline-color: #d4a85a; box-shadow: 0 0 8px rgba(212, 168, 90, 0.5); }
+  .ruby-card .calendar .head { color: #c5a89a; }
+  .ruby-card .calendar .head.sat { color: #8ab4f8; }
+  .ruby-card .calendar .head.sun { color: #f08a8a; }
+  .ruby-card .my-break-row { color: #f4e9d4; }
+  .ruby-card .my-break-row .clock { filter: brightness(1.2); }
+  .ruby-card .my-break-row .time { color: #d4a85a; font-family: monospace; font-weight: 700; }
+  .ruby-card .my-break-row .label { color: #c5a89a; }
+  .ruby-card .my-break-row.first { background: rgba(212, 168, 90, 0.12); border-left: 3px solid #d4a85a; padding-left: 8px; border-radius: 4px; }
+  .ruby-card .my-group-info { color: #c5a89a; font-size: 12px; margin-top: 8px; padding: 6px 8px; background: rgba(0,0,0,0.25); border-radius: 6px; }
+  .ruby-card .legend { color: #c5a89a; }
+  .ruby-card .legend-item .swatch { box-shadow: 0 0 0 1px rgba(244, 233, 212, 0.2); }
   .hours-strip { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
   .hour-chip { padding: 3px 8px; border-radius: 10px; font-size: 11px; font-family: monospace; background: var(--bg-sec); color: var(--text); cursor: pointer; }
   .hour-chip.active { background: var(--btn); color: var(--btn-text); font-weight: 700; }
@@ -1397,7 +1413,7 @@ function renderMy_(user) {
   const summaryStr = totalCells > 0
     ? escapeHtml(t("my.cell_summary", { n: totalCells, vac: counts.vac, off: counts.off, pre: counts.pre, spl: counts.spl }))
     : escapeHtml(t("my.no_cells"));
-  const headerCard = `<div class="card">
+  const headerCard = `<div class="card ruby-card">
     <h2>${escapeHtml(name)}</h2>
     <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("shift." + user.defaultShift + ".time"))}${subExtraStr}</p>
     <p class="hint" style="margin-top:6px; font-size:11px; opacity:0.85;">⟳ ${escapeHtml(t("my.last_updated", { time: fetchedStr }))} · ${summaryStr}</p>
@@ -1407,7 +1423,7 @@ function renderMy_(user) {
   let todayCard = "";
   const myGroup = findMyGroup_(user.id, myData.breaksData);
   if (!myGroup) {
-    todayCard = `<div class="card">
+    todayCard = `<div class="card ruby-card">
       <h2>${t("my.todays_breaks")} · ${escapeHtml(todayIso())}</h2>
       <p class="hint">${t("my.no_breaks_today")}</p>
     </div>`;
@@ -1428,7 +1444,7 @@ function renderMy_(user) {
     const groupInfoHtml = mates.length > 0
       ? `<div class="my-group-info">${escapeHtml(t("my.group_with", { type: typeLabel, names: mateNames }))}</div>`
       : `<div class="my-group-info">${escapeHtml(t("my.group_alone", { type: typeLabel }))}</div>`;
-    todayCard = `<div class="card">
+    todayCard = `<div class="card ruby-card">
       <h2>${t("my.todays_breaks")} · ${escapeHtml(todayIso())}</h2>
       <div class="my-breaks-list">${rowsHtml}</div>
       ${groupInfoHtml}
@@ -1458,7 +1474,7 @@ function renderMy_(user) {
     return `<div class="${cls.join(" ")}"><span class="d">${d.day}</span>${lblText?`<span class="lbl">${lblText}</span>`:""}</div>`;
   }).join("");
 
-  const calendarCard = `<div class="card">
+  const calendarCard = `<div class="card ruby-card">
     <h2>${t("my.schedule_4w")}</h2>
     <div class="anchor-nav" style="margin-bottom:8px;">
       <button class="ghost" data-my-anchor-delta="-28">${t("common.prev_4w")}</button>
@@ -1475,7 +1491,7 @@ function renderMy_(user) {
     <div class="calendar">${dowHeader}${cells}</div>
   </div>`;
 
-  const contactCard = `<div class="card"><p class="hint">${t("my.contact_admin_for_off")}</p></div>`;
+  const contactCard = `<div class="card ruby-card"><p class="hint">${t("my.contact_admin_for_off")}</p></div>`;
 
   return headerCard + todayCard + calendarCard + contactCard;
 }
