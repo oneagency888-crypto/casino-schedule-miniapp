@@ -112,13 +112,62 @@
   .breaks-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
   .break-group { background: var(--bg); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 4px solid var(--triple); }
   .break-group.pair { border-left-color: var(--pair); }
-  .break-group .gh { font-size: 12px; color: var(--hint); margin-bottom: 6px; font-weight: 600; }
+  .break-group .gh { font-size: 13px; color: var(--text); margin-bottom: 6px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .break-group .gh .g-tables { font-family: monospace; }
+  .break-group .gh .g-type { background: var(--bg-sec); color: var(--hint); border-radius: 8px; padding: 1px 8px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
   .break-slots { display: grid; gap: 4px; }
   .break-slots .row { display: flex; gap: 8px; align-items: center; font-size: 13px; }
   .break-slots .row .time { font-family: monospace; font-weight: 700; color: var(--btn); min-width: 50px; }
   .break-slots .row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* REQ-3 (2026-05-26): 테이블 칩 */
   .table-chip { display: inline-block; background: var(--bg-sec); border-radius: 8px; padding: 1px 6px; font-size: 11px; font-weight: 600; color: var(--text); margin-left: 4px; opacity: 0.9; }
+  /* REDESIGN-1 (2026-05-26): Vacation Range — Ruby Velvet 테마 */
+  .vac-card { background: linear-gradient(135deg, #2a0a14 0%, #3d0d1c 50%, #1a0610 100%); border: 1px solid #4a1422; color: #f4e9d4; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  .vac-card h2 { color: #f4e9d4; }
+  .vac-card .hint { color: #c5a89a; }
+  .vac-card label { color: #d4b5a4; }
+  .vac-card input, .vac-card select { background: #1a0610; color: #f4e9d4; border: 1px solid #4a1422; }
+  .vac-card button.btn { background: #d4a85a; color: #1a0610; }
+  .vac-card button.ghost { background: transparent; color: #d4b5a4; border-color: #4a1422; }
+  .vac-card .range { color: #f4e9d4; font-weight: 600; }
+  /* 총계 칩 */
+  .vac-totals { display: flex; gap: 8px; flex-wrap: wrap; }
+  .vac-total { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 12px; color: #f4e9d4; }
+  .vac-total .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .vac-total.vac .dot { background: var(--vac); }
+  .vac-total.off .dot { background: var(--off); }
+  .vac-total.pre .dot { background: var(--pre); }
+  .vac-total.spl .dot { background: var(--spl); }
+  /* 직원 카드 */
+  .vac-emp-card { padding: 14px; }
+  .vac-emp-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; gap: 8px; }
+  .vac-emp-name { font-size: 16px; font-weight: 700; color: #f4e9d4; }
+  .vac-emp-meta { font-size: 11px; color: #c5a89a; }
+  .vac-emp-counts { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .vac-count { font-size: 11px; padding: 2px 8px; border-radius: 8px; font-weight: 600; background: rgba(0,0,0,0.3); color: #f4e9d4; }
+  .vac-count.vac { color: var(--vac); }
+  .vac-count.off { color: var(--off); }
+  .vac-count.pre { color: var(--pre); }
+  .vac-count.spl { color: var(--spl); }
+  /* 4주 그리드 */
+  .vac-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .vac-dow { font-size: 10px; color: #c5a89a; text-align: center; padding: 2px 0; font-weight: 600; }
+  .vac-dow.sat { color: #8ab4f8; }
+  .vac-dow.sun { color: #f08a8a; }
+  /* 셀 — 넉넉하게 크게 */
+  .vac-cell { aspect-ratio: 1; background: rgba(0,0,0,0.35); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; padding: 4px 2px; color: #f4e9d4; position: relative; transition: transform 0.15s ease; cursor: default; min-height: 44px; }
+  .vac-cell .d { font-size: 14px; font-weight: 700; }
+  .vac-cell .lbl { font-size: 9px; font-weight: 800; margin-top: 1px; letter-spacing: 0.4px; }
+  /* 상태별 컬러 (어두운 배경에 잘 보이게 채도 강화) */
+  .vac-cell.vac { background: var(--vac); color: #06223d; }
+  .vac-cell.off { background: var(--off); color: #3d2a00; }
+  .vac-cell.pre { background: var(--pre); color: #3d1a00; }
+  .vac-cell.spl { background: var(--spl); color: #2a1244; }
+  /* 연속 streak — 좌우 cell 사이 여백 줄여 줄로 보이게 */
+  .vac-cell.streak-prev { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -4px; padding-left: 6px; }
+  .vac-cell.streak-next { border-top-right-radius: 0; border-bottom-right-radius: 0; margin-right: -4px; padding-right: 6px; }
+  /* 오늘 표시 — 금색 글로우 */
+  .vac-cell.today { box-shadow: 0 0 0 2px #d4a85a, 0 0 12px rgba(212, 168, 90, 0.6); z-index: 1; }
   .hours-strip { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
   .hour-chip { padding: 3px 8px; border-radius: 10px; font-size: 11px; font-family: monospace; background: var(--bg-sec); color: var(--text); cursor: pointer; }
   .hour-chip.active { background: var(--btn); color: var(--btn-text); font-weight: 700; }
@@ -236,6 +285,13 @@ const I18N = {
     "calendar.set_vacation_range":"Set vacation range","calendar.from":"From","calendar.to":"To",
     "calendar.apply_vacation":"Apply Vacation","calendar.viewer_locked":"View only — admin must edit.",
     "calendar.cell_help":"Tap cell to cycle: work → OFF → VAC → PRE → SPL → work.",
+    "vacation.intro":"Pick a staff and set a vacation date range. Existing pinned cells are preserved.",
+    "vacation.select_employee":"Select staff",
+    "vacation.placeholder_select":"— Choose a staff —",
+    "vacation.need_employee":"Please select a staff first.",
+    "vacation.need_dates":"Please enter both start and end dates.",
+    "vacation.note_pinned":"Note: cells already pinned (manually toggled) are skipped.",
+    "vacation.quick_apply":"Quick apply (range)",
     "calendar.no_pending":"No pending changes",
     "calendar.applying":"Applying {n} change(s)…",
     "calendar.applied_ok":"{ok} change(s) applied",
@@ -324,6 +380,13 @@ const I18N = {
     "calendar.set_vacation_range":"휴가 범위 설정","calendar.from":"시작","calendar.to":"종료",
     "calendar.apply_vacation":"휴가 적용","calendar.viewer_locked":"보기 전용 — 수정은 관리자에게.",
     "calendar.cell_help":"셀 탭으로 순환: 출근 → OFF → VAC → PRE → SPL → 출근.",
+    "vacation.intro":"직원을 선택하고 휴가 기간을 입력하세요. 이미 고정된(pinned) 셀은 보존됩니다.",
+    "vacation.select_employee":"직원 선택",
+    "vacation.placeholder_select":"— 직원을 선택하세요 —",
+    "vacation.need_employee":"먼저 직원을 선택해주세요.",
+    "vacation.need_dates":"시작일과 종료일을 모두 입력해주세요.",
+    "vacation.note_pinned":"참고: 이미 직접 토글한 셀(pinned)은 건너뜁니다.",
+    "vacation.quick_apply":"빠른 입력 (범위)",
     "calendar.no_pending":"적용할 변경이 없습니다",
     "calendar.applying":"{n}개 변경 적용 중…",
     "calendar.applied_ok":"{ok}개 변경 적용됨",
@@ -570,10 +633,20 @@ const SCREEN_BREAKS = "breaks";
 const SCREEN_MY = "my";
 const SCREEN_STAFF = "staff";
 const SCREEN_CYCLE = "shift_cycle";  // M-4 (2026-05-26): placeholder → 실제 화면
+const SCREEN_VACATION = "vacation_range";  // REQ-5b (2026-05-26): 전용 화면
 const PLACEHOLDER_SCREENS = {
-  // REQ-5 (2026-05-26): vacation_range는 placeholder가 아니라 Find Dealer로 직접 이동.
   "backup":         { emo: "📤", titleKey: "home.backup",         descKey: "placeholder.backup.desc",         stage: 10 }
 };
+
+// REDESIGN-1 (2026-05-26): 휴가 범위 4주 오버뷰 상태
+let vacationOverview = null;     // 서버 응답 (anchor / endDate / employees / dailyCounts / totals)
+let vacationAnchor = null;       // 현재 보고있는 4주 시작
+let vacationLoading = false;
+// (legacy v1 — REQ-5b 전용 화면 변수도 일부 보존, 빠른 폼 모드 진입 시)
+let vacationEmpId = "";
+let vacationFrom = "";
+let vacationTo = "";
+let vacationQuickFormOpen = false;
 
 // M-4 사이클 화면 상태
 let cycleData = null;        // { cycles: [...], currentCycleId }
@@ -666,6 +739,7 @@ function render() {
   else if (currentScreen === SCREEN_MY) title = t("my.title");
   else if (currentScreen === SCREEN_STAFF) title = t("staff.title");
   else if (currentScreen === SCREEN_CYCLE) title = t("cycle.title");
+  else if (currentScreen === SCREEN_VACATION) title = t("home.vacation_range");
   else if (PLACEHOLDER_SCREENS[currentScreen]) title = t(PLACEHOLDER_SCREENS[currentScreen].titleKey);
 
   headerTitle.textContent = title;
@@ -687,6 +761,8 @@ function render() {
     main.innerHTML = renderStaff_(user);
   } else if (currentScreen === SCREEN_CYCLE) {
     main.innerHTML = renderCycle_(user);
+  } else if (currentScreen === SCREEN_VACATION) {
+    main.innerHTML = renderVacation_(user);
   } else if (PLACEHOLDER_SCREENS[currentScreen]) {
     main.innerHTML = renderPlaceholder_(currentScreen);
   } else {
@@ -975,7 +1051,7 @@ async function applyPendingChanges() {
     errMsg = e && e.message ? e.message : String(e);
   }
 
-  invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks");
+  invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks"); invalidateCache("getVacationOverview");
   pendingCellChanges = {};
   applyingPending = false;
 
@@ -1083,19 +1159,21 @@ function renderBreaks_(user) {
     }
     return { name: empId, defaultTable: "" };
   };
+  // FIX-2 (2026-05-26): 그룹 라벨 = 테이블 번호 (예: "C11, C12") + 타입 칩 추가
   const groupsHtml = groups.length === 0 ? `<p class="hint">${t("breaks.no_dealers")}</p>` :
     groups.map((g, i) => {
-      const titleKey = g.type === "triple" ? "breaks.group_triple" : "breaks.group_pair";
       const slotKeys = g.type === "triple" ? ["00","20","40"] : ["00","30"];
+      const tablesArr = Array.isArray(g.tables) ? g.tables : [];
+      const tableLabel = tablesArr.length > 0 ? tablesArr.join(", ") : ("Group " + (i + 1));
+      const typeChip = g.type === "triple" ? "triple" : "pair";
       const rows = slotKeys.map(k => {
         const empId = g.slots[k];
         const info = lookupEmp_(empId);
         const nameLabel = info ? info.name : (empId || "(empty)");
-        const tableLabel = info && info.defaultTable ? ` <span class="table-chip">${escapeHtml(info.defaultTable)}</span>` : "";
         const tm = computeSlotTime_(breaksData.shiftStartTime, k, breaksHourOffset, breaksShift);
-        return `<div class="row"><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(nameLabel)}${tableLabel}</span></div>`;
+        return `<div class="row"><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(nameLabel)}</span></div>`;
       }).join("");
-      return `<div class="break-group ${g.type === "pair" ? "pair" : ""}"><div class="gh">${escapeHtml(t(titleKey, { n: i + 1 }))}</div><div class="break-slots">${rows}</div></div>`;
+      return `<div class="break-group ${g.type === "pair" ? "pair" : ""}"><div class="gh"><span class="g-tables">${escapeHtml(tableLabel)}</span> <span class="g-type">${escapeHtml(typeChip)}</span></div><div class="break-slots">${rows}</div></div>`;
     }).join("");
   const dealerBreaksHtml = `<div class="card"><h2>${t("breaks.dealer_breaks")}</h2>${hourChips}${groupsHtml}</div>`;
   const sbsByEmp = {};
@@ -1570,6 +1648,184 @@ async function restoreStaff(id) {
 }
 
 // ────────────────────────────────────────────────────────────
+// REQ-5b (2026-05-26): Vacation Range 전용 화면
+// 직원 선택 + 기간 + Apply (단축 경로 — Find Dealer 거치지 않음)
+// ────────────────────────────────────────────────────────────
+async function openVacationRange() {
+  currentScreen = SCREEN_VACATION;
+  vacationLoading = true;
+  vacationAnchor = vacationAnchor || mondayOfThisWeek();
+  vacationFrom = todayIso();
+  vacationTo = fmtDate(addDays(new Date(), 4));
+  render();
+  await loadVacationOverview_();
+}
+
+async function loadVacationOverview_(forceFresh) {
+  vacationLoading = true; render();
+  try {
+    const r = await apiGetCached("getVacationOverview", { anchor: vacationAnchor }, { forceFresh: !!forceFresh });
+    if (r && r.ok && r.data) vacationOverview = r.data;
+    else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+  vacationLoading = false; render();
+}
+
+async function moveVacationAnchor(days) {
+  if (days === 0) vacationAnchor = mondayOfThisWeek();
+  else vacationAnchor = fmtDate(addDays(parseDate(vacationAnchor), days));
+  await loadVacationOverview_(true);
+}
+
+// REDESIGN-1: 휴가 범위 4주 오버뷰 화면 (Ruby Velvet 디자인)
+function renderVacation_(user) {
+  if (!user || !user.isAdmin) return `<div class="card"><p class="hint">${t("error.forbidden")}</p></div>`;
+  if (vacationLoading && !vacationOverview) return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
+  if (!vacationOverview) return `<div class="card"><p class="hint">${t("search.no_results")}</p></div>`;
+
+  const anchorIso = vacationOverview.anchor;
+  const totals = vacationOverview.totals || {};
+
+  // 헤더 카드 — anchor 네비 + 총계 + 범례
+  const headerCard = `<div class="card vac-card vac-header">
+    <h2>📅 ${t("home.vacation_range")}</h2>
+    <div class="anchor-nav" style="margin-top:6px;">
+      <button class="ghost" data-vac-anchor-delta="-28">${t("common.prev_4w")}</button>
+      <span class="range">${escapeHtml(rangeLabel(anchorIso))}</span>
+      <button class="ghost" data-vac-anchor-delta="0">${t("common.today")}</button>
+      <button class="ghost" data-vac-anchor-delta="28">${t("common.next_4w")}</button>
+    </div>
+    <div class="vac-totals" style="margin-top:8px;">
+      <span class="vac-total vac"><span class="dot"></span>VAC ${totals.vacation || 0}</span>
+      <span class="vac-total off"><span class="dot"></span>OFF ${totals.dayoff || 0}</span>
+      <span class="vac-total pre"><span class="dot"></span>PRE ${totals.pre_practice || 0}</span>
+      <span class="vac-total spl"><span class="dot"></span>SPL ${totals.special || 0}</span>
+    </div>
+    <button class="btn ghost small" id="vac-quick-toggle" style="margin-top:10px;">${vacationQuickFormOpen ? t("staff.cancel") : "✚ " + t("vacation.quick_apply")}</button>
+  </div>`;
+
+  // 빠른 입력 폼 (옵션, 토글)
+  let quickForm = "";
+  if (vacationQuickFormOpen) {
+    const opts = (vacationOverview.employees || []).slice().sort(function(a, b) {
+      const an = (LANG === "ko" && a.name_ko) ? a.name_ko : (a.name_en || "");
+      const bn = (LANG === "ko" && b.name_ko) ? b.name_ko : (b.name_en || "");
+      return an.localeCompare(bn);
+    });
+    const optsHtml = opts.map(function(e) {
+      const nm = (LANG === "ko" && e.name_ko) ? e.name_ko : (e.name_en || e.id);
+      const extras = [e.category === "dealer" ? "🃏" : "🎯"];
+      if (e.defaultTable) extras.push(e.defaultTable);
+      if (e.nationality) extras.push(e.nationality);
+      return `<option value="${escapeHtml(e.id)}" ${e.id === vacationEmpId ? "selected" : ""}>${escapeHtml(nm + " (" + extras.join(" · ") + ")")}</option>`;
+    }).join("");
+    quickForm = `<div class="card vac-card">
+      <h2 style="margin-top:0;">${t("vacation.quick_apply")}</h2>
+      <label>${t("vacation.select_employee")}</label>
+      <select id="vac-emp-select" style="margin-top:6px;">
+        <option value="">${t("vacation.placeholder_select")}</option>
+        ${optsHtml}
+      </select>
+      <div class="row2" style="margin-top:10px;">
+        <div><label>${t("calendar.from")}</label><input type="date" id="vac-range-from" value="${escapeHtml(vacationFrom)}"></div>
+        <div><label>${t("calendar.to")}</label><input type="date" id="vac-range-to" value="${escapeHtml(vacationTo)}"></div>
+      </div>
+      <button class="btn" id="vac-range-apply" style="margin-top:10px; width:100%;">${t("calendar.apply_vacation")}</button>
+      <p class="hint" style="margin-top:8px; font-size:11px;">${t("vacation.note_pinned")}</p>
+    </div>`;
+  }
+
+  // 직원별 4주 미니 캘린더 카드 — Ruby Velvet 스타일
+  const dowKeys = ["calendar.mon","calendar.tue","calendar.wed","calendar.thu","calendar.fri","calendar.sat","calendar.sun"];
+  const dowHeader = dowKeys.map((k, i) => `<div class="vac-dow ${i===5?"sat":i===6?"sun":""}">${t(k)}</div>`).join("");
+  const today = todayIso();
+
+  const employees = vacationOverview.employees || [];
+  const empCards = employees.map(function(e) {
+    const nm = (LANG === "ko" && e.name_ko) ? e.name_ko : (e.name_en || e.id);
+    const days = e.days || {};
+    // 28일 셀 + 연속 VAC 줄 표시 (start/middle/end 클래스)
+    const cellsArr = [];
+    for (let i = 0; i < 28; i++) {
+      const iso = fmtDate(addDays(parseDate(anchorIso), i));
+      const st = days[iso] || "work";
+      const prevSt = i > 0 ? (days[fmtDate(addDays(parseDate(anchorIso), i - 1))] || "work") : null;
+      const nextSt = i < 27 ? (days[fmtDate(addDays(parseDate(anchorIso), i + 1))] || "work") : null;
+      const sameAsPrev = (st === prevSt && st !== "work");
+      const sameAsNext = (st === nextSt && st !== "work");
+      cellsArr.push({ iso, day: parseDate(iso).getDate(), state: st, sameAsPrev, sameAsNext, isToday: iso === today });
+    }
+    const cellsHtml = cellsArr.map(function(c) {
+      const cls = ["vac-cell"];
+      if (c.state === "vacation") cls.push("vac");
+      else if (c.state === "dayoff") cls.push("off");
+      else if (c.state === "pre_practice") cls.push("pre");
+      else if (c.state === "special") cls.push("spl");
+      if (c.isToday) cls.push("today");
+      if (c.sameAsPrev) cls.push("streak-prev");
+      if (c.sameAsNext) cls.push("streak-next");
+      const lbl = c.state === "vacation" ? "VAC" : c.state === "dayoff" ? "OFF" : c.state === "pre_practice" ? "PRE" : c.state === "special" ? "SPL" : "";
+      return `<div class="${cls.join(" ")}" data-vac-cell="${c.iso}|${e.id}"><span class="d">${c.day}</span>${lbl ? `<span class="lbl">${lbl}</span>` : ""}</div>`;
+    }).join("");
+    // 카운트 (이 직원의 28일 합계)
+    let cVac = 0, cOff = 0, cPre = 0, cSpl = 0;
+    Object.values(days).forEach(function(s) {
+      if (s === "vacation") cVac++; else if (s === "dayoff") cOff++;
+      else if (s === "pre_practice") cPre++; else if (s === "special") cSpl++;
+    });
+    const extras = [];
+    extras.push(e.category === "dealer" ? "🃏" : "🎯");
+    if (e.defaultTable) extras.push(e.defaultTable);
+    if (e.nationality) extras.push(e.nationality);
+
+    return `<div class="card vac-card vac-emp-card">
+      <div class="vac-emp-head">
+        <div class="vac-emp-name">${escapeHtml(nm)}</div>
+        <div class="vac-emp-meta">${extras.map(escapeHtml).join(" · ")}</div>
+      </div>
+      <div class="vac-emp-counts">
+        <span class="vac-count vac">VAC ${cVac}</span>
+        <span class="vac-count off">OFF ${cOff}</span>
+        <span class="vac-count pre">PRE ${cPre}</span>
+        <span class="vac-count spl">SPL ${cSpl}</span>
+      </div>
+      <div class="vac-grid">${dowHeader}${cellsHtml}</div>
+    </div>`;
+  }).join("");
+
+  return headerCard + quickForm + empCards;
+}
+
+async function submitVacationRange() {
+  const empSel = document.getElementById("vac-emp-select");
+  const fromEl = document.getElementById("vac-range-from");
+  const toEl = document.getElementById("vac-range-to");
+  const empId = empSel ? empSel.value : "";
+  const from = fromEl ? fromEl.value : "";
+  const to = toEl ? toEl.value : "";
+  if (!empId) { showToast(t("vacation.need_employee"), 2500); return; }
+  if (!from || !to) { showToast(t("vacation.need_dates"), 2500); return; }
+  if (from > to) { showToast(t("toast.from_after_to"), 2500); return; }
+  try {
+    const r = await apiPost("applyVacationRange", { employeeId: empId, startDate: from, endDate: to });
+    invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks"); invalidateCache("getVacationOverview");
+    if (r && r.ok && r.data) {
+      const aff = (r.data.affectedDates || []).length;
+      const skip = (r.data.skippedDates || []).length;
+      let msg = t("toast.vacation_applied", { n: aff });
+      if (skip > 0) msg += " · " + t("toast.vacation_pinned_skipped", { n: skip });
+      showToast(msg, 3500);
+      // REDESIGN-1: 적용 후 오버뷰 갱신
+      if (currentScreen === SCREEN_VACATION) await loadVacationOverview_(true);
+    } else {
+      showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+    }
+  } catch (err) {
+    showToast(t("toast.action_failed", { msg: err.message || err }));
+  }
+}
+
+// ────────────────────────────────────────────────────────────
 // M-4 (2026-05-26): 시프트 사이클 관리
 // ────────────────────────────────────────────────────────────
 async function openCycleMgmt() {
@@ -1757,10 +2013,9 @@ document.addEventListener("visibilitychange", function() {
   if (currentScreen === SCREEN_MY) loadMyData_(true);
   else if (currentScreen === SCREEN_BREAKS) loadBreaks_(true);
   else if (currentScreen === SCREEN_CALENDAR && selectedStaff) {
-    // 캐시 무효화 후 다시 진입
     invalidateCache("getStaffDetail");
     openCalendar(selectedStaff.id, selectedStaff.name);
-  }
+  } else if (currentScreen === SCREEN_VACATION) loadVacationOverview_(true);
 });
 
 // REFRESH-1 (2026-05-26): 컨텍스트 인식 새로고침 — 현재 화면에 맞는 fresh fetch.
@@ -1784,6 +2039,9 @@ async function manualRefresh() {
     } else if (currentScreen === SCREEN_CYCLE) {
       invalidateCache("listShiftCycles");
       await loadCycles_();
+    } else if (currentScreen === SCREEN_VACATION) {
+      invalidateCache("getVacationOverview");
+      await loadVacationOverview_(true);
     } else if (currentScreen === SCREEN_HOME) {
       // 홈에선 ping 결과 갱신 — 별도 처리 불필요. 토스트만.
     }
@@ -1815,6 +2073,7 @@ function bindEvents() {
       else if (currentScreen === SCREEN_BREAKS) { currentScreen = SCREEN_HOME; breaksData = null; }
       else if (currentScreen === SCREEN_STAFF) { currentScreen = SCREEN_HOME; staffListData = null; staffEditingId = null; staffAddOpen = false; }
       else if (currentScreen === SCREEN_CYCLE) { currentScreen = SCREEN_HOME; cycleData = null; cycleNewOpen = false; cycleEditingId = null; }
+      else if (currentScreen === SCREEN_VACATION) { currentScreen = SCREEN_HOME; vacationCandidates = []; vacationEmpId = ""; }
       else if (currentScreen === SCREEN_MY) {
         // viewer는 뒤로 가도 화면 5 그대로. admin은 홈으로.
         if (bootData && bootData.user && bootData.user.isAdmin) { currentScreen = SCREEN_HOME; myData = null; }
@@ -1834,12 +2093,8 @@ function bindEvents() {
         if (navBtn.dataset.nav === SCREEN_MY) { openMy(); return; }
         if (navBtn.dataset.nav === SCREEN_STAFF) { openStaffMgmt(); return; }
         if (navBtn.dataset.nav === SCREEN_CYCLE) { openCycleMgmt(); return; }
-        // REQ-5 (2026-05-26): Vacation Range → Find Dealer로 이동 + 안내
-        if (navBtn.dataset.nav === "vacation_range") {
-          navigate(SCREEN_FIND_DEALER);
-          showToast(t("placeholder.vacation_range.desc"), 3500);
-          return;
-        }
+        // REQ-5b (2026-05-26): Vacation Range → 전용 화면
+        if (navBtn.dataset.nav === SCREEN_VACATION) { openVacationRange(); return; }
         navigate(navBtn.dataset.nav); return;
       }
       const shiftBtn = e.target.closest("[data-shift]");
@@ -1892,6 +2147,12 @@ function bindEvents() {
       if (e.target.id === "cycle-new-save") { createCycleSubmit(); return; }
       const cycleEndBtn = e.target.closest("[data-cycle-end]");
       if (cycleEndBtn) { endCycle(cycleEndBtn.dataset.cycleEnd, cycleEndBtn.dataset.cycleName); return; }
+
+      // REQ-5b / REDESIGN-1 — Vacation Range 화면
+      if (e.target.id === "vac-range-apply") { submitVacationRange(); return; }
+      if (e.target.id === "vac-quick-toggle") { vacationQuickFormOpen = !vacationQuickFormOpen; render(); return; }
+      const vacAnchorBtn = e.target.closest("[data-vac-anchor-delta]");
+      if (vacAnchorBtn) { moveVacationAnchor(parseInt(vacAnchorBtn.dataset.vacAnchorDelta, 10)); return; }
     });
     mainEl.dataset.bound = "1";
   }
@@ -1908,6 +2169,10 @@ function bindEvents() {
     });
     mainEl2.addEventListener("change", (e) => {
       if (e.target.id === "staff-filter") { staffFilter = e.target.value; render(); }
+      // REQ-5b: Vacation Range 화면 입력 보존
+      if (e.target.id === "vac-emp-select") { vacationEmpId = e.target.value; return; }
+      if (e.target.id === "vac-range-from") { vacationFrom = e.target.value; return; }
+      if (e.target.id === "vac-range-to") { vacationTo = e.target.value; return; }
     });
     mainEl2.dataset.bound2 = "1";
   }
@@ -1934,4 +2199,3 @@ document.addEventListener("DOMContentLoaded", boot);
 
 </body>
 </html>
-
