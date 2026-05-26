@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -244,7 +243,18 @@ const I18N = {
     "staff.field_role":"Role","staff.field_shift":"Default shift",
     "staff.field_join":"Join date","staff.field_telegram":"Telegram ID (optional)",
     "staff.confirm_leave":"Mark {name} as left today?",
-    "toast.staff_added":"Staff added","toast.staff_updated":"Updated","toast.staff_left":"Marked as left","toast.staff_restored":"Restored"
+    "toast.staff_added":"Staff added","toast.staff_updated":"Updated","toast.staff_left":"Marked as left","toast.staff_restored":"Restored",
+    "cycle.title":"Shift Cycle","cycle.list_title":"Cycles",
+    "cycle.add_btn":"➕ New Cycle","cycle.add_new":"Create new cycle",
+    "cycle.field_name":"Name","cycle.field_start":"Start date","cycle.field_end":"End date",
+    "cycle.range":"{start} ─ {end}","cycle.length_days":"{n} days","cycle.assignments":"{n} assignments",
+    "cycle.current":"Current","cycle.future":"Future","cycle.past":"Past",
+    "cycle.edit_assignments":"Edit shifts","cycle.end":"End now",
+    "cycle.confirm_end":"End cycle '{name}' today?",
+    "cycle.no_cycles":"No cycles. Create one to get started.",
+    "cycle.save":"Save","cycle.cancel":"Cancel",
+    "cycle.assignments_for":"Assignments — {name}",
+    "toast.cycle_created":"Cycle created","toast.cycle_updated":"Assignment updated","toast.cycle_ended":"Cycle ended"
   },
   ko: {
     "common.app_title":"카지노 스케줄","common.refresh":"새로고침","common.loading":"불러오는 중…",
@@ -311,7 +321,18 @@ const I18N = {
     "staff.field_role":"역할","staff.field_shift":"기본 시프트",
     "staff.field_join":"입사일","staff.field_telegram":"텔레그램 ID (선택)",
     "staff.confirm_leave":"{name}을(를) 오늘부로 퇴사 처리할까요?",
-    "toast.staff_added":"인원 추가됨","toast.staff_updated":"갱신됨","toast.staff_left":"퇴사 처리됨","toast.staff_restored":"재직 복원됨"
+    "toast.staff_added":"인원 추가됨","toast.staff_updated":"갱신됨","toast.staff_left":"퇴사 처리됨","toast.staff_restored":"재직 복원됨",
+    "cycle.title":"시프트 사이클","cycle.list_title":"사이클 목록",
+    "cycle.add_btn":"➕ 새 사이클","cycle.add_new":"새 사이클 만들기",
+    "cycle.field_name":"이름","cycle.field_start":"시작일","cycle.field_end":"종료일",
+    "cycle.range":"{start} ─ {end}","cycle.length_days":"{n}일","cycle.assignments":"배치 {n}건",
+    "cycle.current":"현재","cycle.future":"예정","cycle.past":"종료",
+    "cycle.edit_assignments":"배치 편집","cycle.end":"오늘 종료",
+    "cycle.confirm_end":"'{name}' 사이클을 오늘부로 종료할까요?",
+    "cycle.no_cycles":"사이클이 없습니다. 새로 만들어주세요.",
+    "cycle.save":"저장","cycle.cancel":"취소",
+    "cycle.assignments_for":"배치 — {name}",
+    "toast.cycle_created":"사이클 생성됨","toast.cycle_updated":"배치 갱신됨","toast.cycle_ended":"사이클 종료됨"
   }
 };
 
@@ -361,6 +382,38 @@ async function apiPost(action, body) {
   return await res.json();
 }
 
+// ────────────────────────────────────────────────────────────
+// C-1(d) (2026-05-26): 클라이언트 메모리 캐시 — 60s TTL
+// 같은 화면 재진입(예: 본인 화면 ↔ 홈) 시 네트워크 0.
+// 쓰기 액션 발생 시 invalidateCache(prefix)로 명시 무효화.
+// ────────────────────────────────────────────────────────────
+const READ_CACHE_TTL_MS = 60 * 1000;
+const readCache = new Map();  // key → { expires, value }
+
+function cacheKey_(action, paramsObj) {
+  const keys = paramsObj ? Object.keys(paramsObj).sort() : [];
+  const parts = keys.map(k => k + "=" + String(paramsObj[k]));
+  return action + "?" + parts.join("&");
+}
+
+async function apiGetCached(action, extraParams, ttlMs) {
+  const key = cacheKey_(action, extraParams);
+  const now = Date.now();
+  const hit = readCache.get(key);
+  if (hit && hit.expires > now) return hit.value;
+  const r = await apiGet(action, extraParams);
+  // 성공 응답만 캐시
+  if (r && r.ok) readCache.set(key, { expires: now + (ttlMs || READ_CACHE_TTL_MS), value: r });
+  return r;
+}
+
+function invalidateCache(prefix) {
+  if (!prefix) { readCache.clear(); return; }
+  for (const k of Array.from(readCache.keys())) {
+    if (k.indexOf(prefix) === 0) readCache.delete(k);
+  }
+}
+
 function showToast(msg, ms) {
   const el = document.getElementById("toast");
   el.textContent = msg;
@@ -375,11 +428,17 @@ const SCREEN_CALENDAR = "calendar";
 const SCREEN_BREAKS = "breaks";
 const SCREEN_MY = "my";
 const SCREEN_STAFF = "staff";
+const SCREEN_CYCLE = "shift_cycle";  // M-4 (2026-05-26): placeholder → 실제 화면
 const PLACEHOLDER_SCREENS = {
   "vacation_range": { emo: "📅", titleKey: "home.vacation_range", descKey: "placeholder.vacation_range.desc", stage: 5 },
-  "shift_cycle":    { emo: "🔄", titleKey: "home.shift_cycle",    descKey: "placeholder.shift_cycle.desc",    stage: 10 },
   "backup":         { emo: "📤", titleKey: "home.backup",         descKey: "placeholder.backup.desc",         stage: 10 }
 };
+
+// M-4 사이클 화면 상태
+let cycleData = null;        // { cycles: [...], currentCycleId }
+let cycleLoading = false;
+let cycleNewOpen = false;    // 새 사이클 폼 펼침
+let cycleEditingId = null;   // 배치 편집 중인 cycleId
 
 let currentScreen = SCREEN_HOME;
 let currentShift = "A";
@@ -460,6 +519,7 @@ function render() {
   else if (currentScreen === SCREEN_BREAKS) title = t("breaks.title");
   else if (currentScreen === SCREEN_MY) title = t("my.title");
   else if (currentScreen === SCREEN_STAFF) title = t("staff.title");
+  else if (currentScreen === SCREEN_CYCLE) title = t("cycle.title");
   else if (PLACEHOLDER_SCREENS[currentScreen]) title = t(PLACEHOLDER_SCREENS[currentScreen].titleKey);
 
   headerTitle.textContent = title;
@@ -479,6 +539,8 @@ function render() {
     main.innerHTML = renderMy_(user);
   } else if (currentScreen === SCREEN_STAFF) {
     main.innerHTML = renderStaff_(user);
+  } else if (currentScreen === SCREEN_CYCLE) {
+    main.innerHTML = renderCycle_(user);
   } else if (PLACEHOLDER_SCREENS[currentScreen]) {
     main.innerHTML = renderPlaceholder_(currentScreen);
   } else {
@@ -574,7 +636,8 @@ function bindSearchInput() {
 async function triggerSearch() {
   searchLoading = true; updateSearchUI_();
   try {
-    const r = await apiGet("searchStaff", { q: searchQuery, shift: searchFilters.shift, category: searchFilters.category, active: searchFilters.active, limit: 50, offset: 0 });
+    // C-1(d): 60s 캐시 (같은 검색 재진입 시 네트워크 0)
+    const r = await apiGetCached("searchStaff", { q: searchQuery, shift: searchFilters.shift, category: searchFilters.category, active: searchFilters.active, limit: 50, offset: 0 });
     if (r && r.ok && r.data) { searchResults = r.data.items || []; searchTotal = r.data.total || 0; }
     else { searchResults = []; searchTotal = 0; showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" })); }
   } catch (err) { searchResults = []; searchTotal = 0; showToast(t("toast.action_failed", { msg: err.message || err })); }
@@ -607,7 +670,8 @@ async function openCalendar(staffId, staffName) {
   selectedStaff = { id: staffId, name: staffName };
   currentScreen = SCREEN_CALENDAR; staffDetail = null; render();
   try {
-    const r = await apiGet("getStaffDetail", { employeeId: staffId, anchor: currentAnchor });
+    // C-1(d) 캐시: 같은 직원 + anchor 재진입 시 네트워크 0
+    const r = await apiGetCached("getStaffDetail", { employeeId: staffId, anchor: currentAnchor });
     if (r && r.ok && r.data) staffDetail = r.data;
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
@@ -659,6 +723,8 @@ async function toggleCell(date, currentState) {
   render();
   try {
     const r = await apiPost("setCellState", { date, employeeId: selectedStaff.id, state: next, pinned: next !== "work" });
+    // C-1(d): 쓰기 후 관련 캐시 무효화 (검색 결과 todayState / 캘린더 / 본인 휴게)
+    invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks");
     if (!r || !r.ok) {
       showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
       if (staffDetail && staffDetail.dayStates) { if (currentState === "work") delete staffDetail.dayStates[date]; else staffDetail.dayStates[date] = { state: currentState, pinned: true, note: "" }; }
@@ -674,6 +740,8 @@ async function applyVacationRange() {
   if (from > to) { showToast(t("toast.from_after_to")); return; }
   try {
     const r = await apiPost("applyVacationRange", { employeeId: selectedStaff.id, startDate: from, endDate: to });
+    // C-1(d): 휴가 적용은 검색/캘린더/본인/휴게 모두 영향
+    invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks");
     if (r && r.ok && r.data) {
       const aff = (r.data.affectedDates || []).length;
       const skip = (r.data.skippedDates || []).length;
@@ -698,7 +766,8 @@ async function openBreaks() {
 async function loadBreaks_() {
   breaksLoading = true; render();
   try {
-    const r = await apiGet("getBreaks", { date: breaksDate, shift: breaksShift });
+    // C-1(d) 캐시: 같은 date+shift 재진입 시 네트워크 0
+    const r = await apiGetCached("getBreaks", { date: breaksDate, shift: breaksShift });
     if (r && r.ok && r.data) breaksData = r.data;
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
@@ -764,6 +833,7 @@ async function recomputeBreaks() {
   if (!confirm(t("breaks.confirm_recompute"))) return;
   try {
     const r = await apiPost("recomputeBreaks", { date: breaksDate, shift: breaksShift });
+    invalidateCache("getBreaks"); invalidateCache("getMyView");
     if (r && r.ok && r.data) { breaksData.groups = r.data.groups || []; breaksData.locked = !!r.data.locked; showToast(t("toast.recomputed")); render(); }
     else if (r && r.data && r.data.locked) showToast(t("toast.action_failed", { msg: "Locked" }));
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
@@ -774,6 +844,7 @@ async function toggleBreakLock() {
   const newLocked = !breaksData.locked;
   try {
     const r = await apiPost("lockBreaks", { date: breaksDate, shift: breaksShift, locked: newLocked });
+    invalidateCache("getBreaks"); invalidateCache("getMyView");
     if (r && r.ok && r.data) { breaksData.locked = !!r.data.locked; showToast(newLocked ? t("toast.locked") : t("toast.unlocked")); render(); }
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
@@ -787,6 +858,7 @@ async function addSupervisorSlot(supId) {
   if (!time || !minutes) { showToast(t("toast.action_failed", { msg: "time/min required" })); return; }
   try {
     const r = await apiPost("setSupervisorBreak", { date: breaksDate, supervisorId: supId, time: time, minutes: minutes });
+    invalidateCache("getBreaks"); invalidateCache("getMyView");
     if (r && r.ok && r.data) { breaksData.supervisorBreaks.push(r.data); showToast(t("toast.super_added")); render(); }
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
@@ -795,6 +867,7 @@ async function addSupervisorSlot(supId) {
 async function deleteSupervisorSlot(slotId) {
   try {
     const r = await apiPost("deleteSupervisorBreak", { slotId: slotId });
+    invalidateCache("getBreaks"); invalidateCache("getMyView");
     if (r && r.ok) { breaksData.supervisorBreaks = (breaksData.supervisorBreaks || []).filter(b => b.id !== slotId); showToast(t("toast.super_deleted")); render(); }
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
@@ -815,21 +888,26 @@ async function loadMyData_() {
   myLoading = true; render();
   const user = bootData.user || {};
   try {
-    // 병렬로 본인 캘린더 + 오늘 휴게 + 이름 매핑용 staff list
-    const [detail, breaks, staffs] = await Promise.all([
-      apiGet("getStaffDetail", { employeeId: user.id, anchor: myAnchor }),
-      apiGet("getBreaks", { date: todayIso(), shift: user.defaultShift }),
-      apiGet("searchStaff", { q: "", shift: "all", category: "all", active: "all", limit: 300 })
-    ]);
-    if (!detail || !detail.ok) throw new Error("detail failed");
+    // C-1(c) (2026-05-26): 3개 API → 1개 통합 호출 getMyView.
+    //   서버에서 Promise.all로 직렬화되던 3-fetch 제거.
+    // C-1(d): 60s 캐시. 같은 anchor+shift 재진입 시 네트워크 0.
+    const r = await apiGetCached("getMyView", {
+      employeeId: user.id,
+      anchor: myAnchor,
+      shift: user.defaultShift
+    });
+    if (!r || !r.ok) throw new Error((r && r.error && r.error.message_en) || "getMyView failed");
+    // nameMap: 서버에서 { id: {en, ko} } → 클라에서 언어별 단일 문자열 변환
+    const rawMap = r.data.nameMap || {};
     const nameMap = {};
-    if (staffs && staffs.ok && staffs.data && staffs.data.items) {
-      staffs.data.items.forEach(s => { nameMap[s.id] = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id); });
-    }
+    Object.keys(rawMap).forEach(id => {
+      const v = rawMap[id] || {};
+      nameMap[id] = (LANG === "ko" && v.ko) ? v.ko : (v.en || id);
+    });
     myData = {
-      anchor: detail.data.anchor,
-      dayStates: detail.data.dayStates,
-      breaksData: (breaks && breaks.ok) ? breaks.data : null,
+      anchor: r.data.anchor,
+      dayStates: r.data.dayStates,
+      breaksData: r.data.breaks || null,
       nameMap: nameMap
     };
   } catch (err) {
@@ -1074,6 +1152,7 @@ async function addStaffSubmit() {
   const telegramUserId = document.getElementById("new-tgid").value.trim();
   try {
     const r = await apiPost("addStaff", { name_en, name_ko, category, defaultShift, joinDate, telegramUserId });
+    invalidateCache();  // 직원 추가는 전체 캐시 영향 (search/staff/my)
     if (r && r.ok && r.data) {
       showToast(t("toast.staff_added"));
       staffAddOpen = false;
@@ -1094,6 +1173,7 @@ async function saveStaffEdit(id) {
   };
   try {
     const r = await apiPost("updateStaff", body);
+    invalidateCache();
     if (r && r.ok && r.data) {
       showToast(t("toast.staff_updated"));
       staffEditingId = null;
@@ -1106,6 +1186,7 @@ async function leaveStaff(id, name) {
   if (!confirm(t("staff.confirm_leave", { name }))) return;
   try {
     const r = await apiPost("leaveStaff", { id: id });
+    invalidateCache();
     if (r && r.ok) { showToast(t("toast.staff_left")); await loadStaffList_(); }
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
@@ -1114,7 +1195,112 @@ async function leaveStaff(id, name) {
 async function restoreStaff(id) {
   try {
     const r = await apiPost("updateStaff", { id: id, active: true });
+    invalidateCache();
     if (r && r.ok) { showToast(t("toast.staff_restored")); await loadStaffList_(); }
+    else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+}
+
+// ────────────────────────────────────────────────────────────
+// M-4 (2026-05-26): 시프트 사이클 관리
+// ────────────────────────────────────────────────────────────
+async function openCycleMgmt() {
+  currentScreen = SCREEN_CYCLE;
+  cycleData = null; cycleNewOpen = false; cycleEditingId = null;
+  render();
+  await loadCycles_();
+}
+
+async function loadCycles_() {
+  cycleLoading = true; render();
+  try {
+    const r = await apiGetCached("listShiftCycles");
+    if (r && r.ok && r.data) cycleData = r.data;
+    else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+  cycleLoading = false; render();
+}
+
+function renderCycle_(user) {
+  const isAdmin = !!user.isAdmin;
+  if (cycleLoading && !cycleData) return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
+  if (!cycleData) return `<div class="card"><p class="hint">${t("search.no_results")}</p></div>`;
+  const today = todayIso();
+  const cycles = cycleData.cycles || [];
+
+  const headerCard = `<div class="card">
+    <h2>${t("cycle.list_title")}</h2>
+    ${isAdmin ? `<div class="filter-row"><button class="btn small" id="cycle-add-toggle">${cycleNewOpen ? t("cycle.cancel") : t("cycle.add_btn")}</button></div>` : ""}
+  </div>`;
+
+  // 신규 폼
+  const todayPlus27 = fmtDate(addDays(parseDate(today), 27));
+  const newForm = (isAdmin && cycleNewOpen) ? `<div class="card"><div class="add-form-card">
+    <h2 style="margin-top:0;">${t("cycle.add_new")}</h2>
+    <div><label>${t("cycle.field_name")}</label><input type="text" id="cycle-new-name" placeholder="Cycle 2026-W22"></div>
+    <div class="row2" style="margin-top:6px;">
+      <div><label>${t("cycle.field_start")}</label><input type="date" id="cycle-new-start" value="${today}"></div>
+      <div><label>${t("cycle.field_end")}</label><input type="date" id="cycle-new-end" value="${todayPlus27}"></div>
+    </div>
+    <button class="btn" id="cycle-new-save" style="margin-top:10px; width:100%;">${t("cycle.save")}</button>
+  </div></div>` : "";
+
+  // 사이클 목록
+  const cycleCards = cycles.length === 0
+    ? `<p class="hint" style="text-align:center;">${t("cycle.no_cycles")}</p>`
+    : cycles.map(c => renderCycleCard_(c, today, isAdmin)).join("");
+
+  return headerCard + newForm + `<div class="card"><div>${cycleCards}</div></div>`;
+}
+
+function renderCycleCard_(c, today, isAdmin) {
+  const startIso = c.startDate || "";
+  const endIso = c.endDate || "";
+  let badge = t("cycle.future");
+  if (startIso && endIso && startIso <= today && today <= endIso) badge = t("cycle.current");
+  else if (endIso && endIso < today) badge = t("cycle.past");
+  const days = (startIso && endIso)
+    ? (Math.round((parseDate(endIso) - parseDate(startIso)) / 86400000) + 1)
+    : 0;
+  const name = escapeHtml(c.name || c.id);
+  const isCurrent = badge === t("cycle.current");
+  return `<div class="staff-mgmt-card">
+    <div class="top">
+      <div>
+        <div class="nm">${name} <span class="badge-active">${escapeHtml(badge)}</span></div>
+        <div class="meta">${escapeHtml(t("cycle.range", { start: startIso, end: endIso }))} · ${escapeHtml(t("cycle.length_days", { n: days }))} · ${escapeHtml(t("cycle.assignments", { n: c.assignmentCount || 0 }))}</div>
+        <div class="meta" style="font-size:11px; opacity:0.6;">ID: ${escapeHtml(c.id)}</div>
+      </div>
+    </div>
+    ${isAdmin ? `<div class="actions">
+      ${isCurrent ? `<button class="btn ghost" data-cycle-end="${escapeHtml(c.id)}" data-cycle-name="${name}">${t("cycle.end")}</button>` : ""}
+    </div>` : ""}
+  </div>`;
+}
+
+async function createCycleSubmit() {
+  const name = document.getElementById("cycle-new-name").value.trim();
+  const startDate = document.getElementById("cycle-new-start").value;
+  const endDate = document.getElementById("cycle-new-end").value;
+  if (!startDate || !endDate) { showToast(t("toast.action_failed", { msg: "start/end required" })); return; }
+  if (startDate > endDate) { showToast(t("toast.from_after_to")); return; }
+  try {
+    const r = await apiPost("createShiftCycle", { name, startDate, endDate });
+    invalidateCache();
+    if (r && r.ok && r.data) {
+      showToast(t("toast.cycle_created"));
+      cycleNewOpen = false;
+      await loadCycles_();
+    } else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+}
+
+async function endCycle(cycleId, name) {
+  if (!confirm(t("cycle.confirm_end", { name: name || cycleId }))) return;
+  try {
+    const r = await apiPost("endShiftCycle", { cycleId, endDate: todayIso() });
+    invalidateCache();
+    if (r && r.ok) { showToast(t("toast.cycle_ended")); await loadCycles_(); }
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
 }
@@ -1163,6 +1349,7 @@ function bindEvents() {
       if (currentScreen === SCREEN_CALENDAR) { currentScreen = SCREEN_FIND_DEALER; selectedStaff = null; staffDetail = null; }
       else if (currentScreen === SCREEN_BREAKS) { currentScreen = SCREEN_HOME; breaksData = null; }
       else if (currentScreen === SCREEN_STAFF) { currentScreen = SCREEN_HOME; staffListData = null; staffEditingId = null; staffAddOpen = false; }
+      else if (currentScreen === SCREEN_CYCLE) { currentScreen = SCREEN_HOME; cycleData = null; cycleNewOpen = false; cycleEditingId = null; }
       else if (currentScreen === SCREEN_MY) {
         // viewer는 뒤로 가도 화면 5 그대로. admin은 홈으로.
         if (bootData && bootData.user && bootData.user.isAdmin) { currentScreen = SCREEN_HOME; myData = null; }
@@ -1181,6 +1368,7 @@ function bindEvents() {
         if (navBtn.dataset.nav === SCREEN_BREAKS) { openBreaks(); return; }
         if (navBtn.dataset.nav === SCREEN_MY) { openMy(); return; }
         if (navBtn.dataset.nav === SCREEN_STAFF) { openStaffMgmt(); return; }
+        if (navBtn.dataset.nav === SCREEN_CYCLE) { openCycleMgmt(); return; }
         navigate(navBtn.dataset.nav); return;
       }
       const shiftBtn = e.target.closest("[data-shift]");
@@ -1227,6 +1415,12 @@ function bindEvents() {
       if (leaveBtn) { leaveStaff(leaveBtn.dataset.staffLeave, leaveBtn.dataset.staffName); return; }
       const restoreBtn = e.target.closest("[data-staff-restore]");
       if (restoreBtn) { restoreStaff(restoreBtn.dataset.staffRestore); return; }
+
+      // M-4 — Shift Cycle
+      if (e.target.id === "cycle-add-toggle") { cycleNewOpen = !cycleNewOpen; render(); return; }
+      if (e.target.id === "cycle-new-save") { createCycleSubmit(); return; }
+      const cycleEndBtn = e.target.closest("[data-cycle-end]");
+      if (cycleEndBtn) { endCycle(cycleEndBtn.dataset.cycleEnd, cycleEndBtn.dataset.cycleName); return; }
     });
     mainEl.dataset.bound = "1";
   }
