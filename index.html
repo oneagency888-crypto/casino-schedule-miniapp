@@ -2213,6 +2213,7 @@ document.addEventListener("visibilitychange", function() {
   else if (currentScreen === SCREEN_CALENDAR && selectedStaff) {
     invalidateCache("getStaffDetail");
     openCalendar(selectedStaff.id, selectedStaff.name);
+  }
   // §12-B 롤백: SCREEN_VACATION visibilitychange 자동 새로고침 제거 (REQ-5b는 dropdown만이라 stale 의미 약함).
 });
 
