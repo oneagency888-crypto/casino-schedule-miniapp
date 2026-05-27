@@ -951,46 +951,60 @@ function renderBreakMatrix_(summary) {
   return html;
 }
 
-function renderAdminHome_(user) {
-  // REQ-15 (2026-05-26): Option D — 대시보드 + LIVE 시각 + 다음 휴게 + 상태 카운트.
-  const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
+// REQ-23/REQ-24 (2026-05-26): LIVE 카드 — admin/supervisor/dealer/trainee 공용
+// admin & supervisor → 슈퍼바이저 출근 + 트레이니 출근 라인 표시
+// dealer & trainee → 본인 카테고리(딜러 출근)만, 슈퍼/트레이니 라인 숨김
+function renderLiveCard_() {
   const summary = (bootData && bootData.todaySummary) || null;
+  if (!summary) return "";
+  const user = (bootData && bootData.user) || {};
+  const showManagerRows = user.isAdmin || user.category === "supervisor";
+
   const liveTime = (function() {
     const d = new Date();
     return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
   })();
-  let dashboardCard = "";
-  if (summary) {
-    const attended = summary.attendance || 0;
-    const total = summary.totalDealers || 0;
-    const tables = (summary.activeTables || []).join(", ") || "—";
-    const cs = summary.stateCounts || {};
-    const groupCnt = summary.groupCount || 0;
-    dashboardCard = `<div class="card dashboard-card">
-      <div class="dash-head">
-        <span class="dash-live">🔴 LIVE</span>
-        <span class="dash-time" id="dash-time">${escapeHtml(summary.date + " " + liveTime)}</span>
-      </div>
-      <div class="dash-row"><span class="dash-label">${t("home.dash_attendance")}</span><span class="dash-value">${attended} / ${total}</span></div>
-      <div class="dash-row"><span class="dash-label">${t("home.dash_attendance_sup")}</span><span class="dash-value">${summary.supervisorAttendance || 0} / ${summary.totalSupervisors || 0}</span></div>
-      <div class="dash-row"><span class="dash-label">${t("home.dash_attendance_trn")}</span><span class="dash-value">${summary.traineeAttendance || 0} / ${summary.totalTrainees || 0}</span></div>
-      <div class="dash-row"><span class="dash-label">${t("home.dash_shift")}</span><span class="dash-value">${escapeHtml(t("shift." + summary.shift + ".full"))} · ${escapeHtml(t("shift." + summary.shift + ".time"))}</span></div>
-      <div class="dash-row"><span class="dash-label">${t("home.dash_tables")}</span><span class="dash-value mono">${escapeHtml(tables)}</span></div>
-      <div class="dash-row"><span class="dash-label">${t("home.dash_groups")}</span><span class="dash-value">${groupCnt}</span></div>
-      ${renderBreakMatrix_(summary)}
-      <div class="dash-states">
-        <span class="ds vac"><span class="dot"></span>VAC ${cs.vacation || 0}</span>
-        <span class="ds off"><span class="dot"></span>OFF ${cs.dayoff || 0}</span>
-        <span class="ds pre"><span class="dot"></span>PRE ${cs.pre_practice || 0}</span>
-        <span class="ds spl"><span class="dot"></span>SPL ${cs.special || 0}</span>
-      </div>
-    </div>`;
-  }
+  const attended = summary.attendance || 0;
+  const total = summary.totalDealers || 0;
+  const tables = (summary.activeTables || []).join(", ") || "—";
+  const cs = summary.stateCounts || {};
+  const groupCnt = summary.groupCount || 0;
+
+  const supRow = showManagerRows
+    ? `<div class="dash-row"><span class="dash-label">${t("home.dash_attendance_sup")}</span><span class="dash-value">${summary.supervisorAttendance || 0} / ${summary.totalSupervisors || 0}</span></div>`
+    : "";
+  const trnRow = showManagerRows
+    ? `<div class="dash-row"><span class="dash-label">${t("home.dash_attendance_trn")}</span><span class="dash-value">${summary.traineeAttendance || 0} / ${summary.totalTrainees || 0}</span></div>`
+    : "";
+
+  return `<div class="card dashboard-card">
+    <div class="dash-head">
+      <span class="dash-live">🔴 LIVE</span>
+      <span class="dash-time" id="dash-time">${escapeHtml(summary.date + " " + liveTime)}</span>
+    </div>
+    <div class="dash-row"><span class="dash-label">${t("home.dash_attendance")}</span><span class="dash-value">${attended} / ${total}</span></div>
+    ${supRow}
+    ${trnRow}
+    <div class="dash-row"><span class="dash-label">${t("home.dash_shift")}</span><span class="dash-value">${escapeHtml(t("shift." + summary.shift + ".full"))} · ${escapeHtml(t("shift." + summary.shift + ".time"))}</span></div>
+    <div class="dash-row"><span class="dash-label">${t("home.dash_tables")}</span><span class="dash-value mono">${escapeHtml(tables)}</span></div>
+    <div class="dash-row"><span class="dash-label">${t("home.dash_groups")}</span><span class="dash-value">${groupCnt}</span></div>
+    ${renderBreakMatrix_(summary)}
+    <div class="dash-states">
+      <span class="ds vac"><span class="dot"></span>VAC ${cs.vacation || 0}</span>
+      <span class="ds off"><span class="dot"></span>OFF ${cs.dayoff || 0}</span>
+      <span class="ds pre"><span class="dot"></span>PRE ${cs.pre_practice || 0}</span>
+      <span class="ds spl"><span class="dot"></span>SPL ${cs.special || 0}</span>
+    </div>
+  </div>`;
+}
+
+function renderAdminHome_(user) {
+  const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
       <p class="hint">${escapeHtml(categoryLabel_(user.category))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p>
     </div>
-    ${dashboardCard}
+    ${renderLiveCard_()}
     <div class="card"><h2>${t("home.quick_actions")}</h2>
       <div class="btn-row">
         <button class="btn" data-nav="${SCREEN_FIND_DEALER}"><span class="emo">👤</span>${t("home.find_dealer")}</button>
@@ -1655,7 +1669,7 @@ function renderMy_(user) {
     <h2>${escapeHtml(name)}</h2>
     <p class="hint">${escapeHtml(categoryLabel_(user.category))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("shift." + user.defaultShift + ".time"))}${subExtraStr}</p>
     <p class="hint" style="margin-top:6px; font-size:11px; opacity:0.85;">⟳ ${escapeHtml(t("my.last_updated", { time: fetchedStr }))} · ${summaryStr}</p>
-  </div>`;
+  </div>` + renderLiveCard_();  // REQ-23: 슈퍼바이저(viewer)에게도 LIVE 카드 노출
 
   // Today's Breaks
   let todayCard = "";
