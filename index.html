@@ -420,7 +420,13 @@ const I18N = {
     "cycle.no_cycles":"No cycles. Create one to get started.",
     "cycle.save":"Save","cycle.cancel":"Cancel",
     "cycle.assignments_for":"Assignments — {name}",
-    "toast.cycle_created":"Cycle created","toast.cycle_updated":"Assignment updated","toast.cycle_ended":"Cycle ended"
+    "toast.cycle_created":"Cycle created","toast.cycle_updated":"Assignment updated","toast.cycle_ended":"Cycle ended",
+    // §14 (2026-05-27): LIVE 매트릭스 + 4역할 분기 신규 i18n 8건 (기획자 §10.12.8 A/B/C)
+    "home.live_title":"LIVE","home.live_attend":"Attendance","home.live_next_break":"Next break",
+    "super.live_title":"LIVE","super.next_is_me":"Your turn next",
+    "super.no_edit_notice":"Supervisor breaks are set by admin (contact admin if needed).",
+    "super.contact_admin_for_break":"Need a change? Contact admin.",
+    "staff.role_trainee":"Trainee"
   },
   ko: {
     "common.app_title":"카지노 스케줄","common.refresh":"새로고침","common.refreshed":"새로고침 완료","common.loading":"불러오는 중…",
@@ -528,7 +534,13 @@ const I18N = {
     "cycle.no_cycles":"사이클이 없습니다. 새로 만들어주세요.",
     "cycle.save":"저장","cycle.cancel":"취소",
     "cycle.assignments_for":"배치 — {name}",
-    "toast.cycle_created":"사이클 생성됨","toast.cycle_updated":"배치 갱신됨","toast.cycle_ended":"사이클 종료됨"
+    "toast.cycle_created":"사이클 생성됨","toast.cycle_updated":"배치 갱신됨","toast.cycle_ended":"사이클 종료됨",
+    // §14 (2026-05-27): LIVE 매트릭스 + 4역할 분기 신규 i18n 8건 (기획자 §10.12.8 A/B/C)
+    "home.live_title":"LIVE","home.live_attend":"출근","home.live_next_break":"다음 휴게",
+    "super.live_title":"LIVE","super.next_is_me":"본인 차례",
+    "super.no_edit_notice":"슈퍼 휴게는 관리자가 입력합니다 (필요 시 관리자에게 요청).",
+    "super.contact_admin_for_break":"휴게 변경 필요 시 관리자에게 문의하세요.",
+    "staff.role_trainee":"트레이니"
   }
 };
 
@@ -860,7 +872,11 @@ function render() {
   } else if (currentScreen === SCREEN_BREAKS) {
     main.innerHTML = renderBreaks_(user);
   } else if (currentScreen === SCREEN_MY) {
-    main.innerHTML = renderMy_(user);
+    // §14 (2026-05-27): §10.12.8 D 4역할 분기 라우팅.
+    //   admin     → 화면 1 (SCREEN_HOME 경로 — 본 분기 도달 X)
+    //   supervisor → 화면 5B (renderSupervisorHome_ — Today's Breaks + LIVE + My Schedule)
+    //   dealer/trainee → 화면 5 (renderMy_ — 기존 viewer 그대로)
+    main.innerHTML = (user.category === "supervisor") ? renderSupervisorHome_(user) : renderMy_(user);
   } else if (currentScreen === SCREEN_STAFF) {
     main.innerHTML = renderStaff_(user);
   } else if (currentScreen === SCREEN_CYCLE) {
@@ -977,7 +993,7 @@ function renderLiveCard_() {
 
   return `<div class="card dashboard-card">
     <div class="dash-head">
-      <span class="dash-live">🔴 LIVE</span>
+      <span class="dash-live">🔴 ${escapeHtml(t("home.live_title"))}</span>
       <span class="dash-time" id="dash-time">${escapeHtml(summary.date + " " + liveTime)}</span>
     </div>
     <div class="dash-row"><span class="dash-label">${t("home.dash_attendance")}</span><span class="dash-value">${attended} / ${total}</span></div>
@@ -998,11 +1014,13 @@ function renderLiveCard_() {
 
 function renderAdminHome_(user) {
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
+  // §14 (2026-05-27): §8.32 옵션 A 확정 — LIVE 카드 Quick Actions 아래로 이동.
+  // 기획자 §10.12.8 A 와이어프레임 v3: 헤더 → Quick Actions → LIVE → (Warnings 위치).
+  // T1 미발동 (Quick Actions 첫 자리 유지). W1 4탭 기준 유지.
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
       <p class="hint">${escapeHtml(categoryLabel_(user.category))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p>
     </div>
-    ${renderLiveCard_()}
     <div class="card"><h2>${t("home.quick_actions")}</h2>
       <div class="btn-row">
         <button class="btn" data-nav="${SCREEN_FIND_DEALER}"><span class="emo">👤</span>${t("home.find_dealer")}</button>
@@ -1011,7 +1029,8 @@ function renderAdminHome_(user) {
         <button class="btn" data-nav="shift_cycle"><span class="emo">🔄</span>${t("home.shift_cycle")}</button>
         <button class="btn" data-nav="${SCREEN_STAFF}"><span class="emo">➕</span>${t("home.add_staff")}</button>
         <button class="btn" data-nav="backup"><span class="emo">📤</span>${t("home.backup")}</button>
-      </div></div>`;
+      </div></div>
+    ${renderLiveCard_()}`;
 }
 
 function renderViewerHome_(user) {
@@ -1594,9 +1613,13 @@ function renderMy_(user) {
     : escapeHtml(t("my.no_cells"));
   // §12-A 롤백 (2026-05-26): V4 깨짐 수정 — REQ-23의 renderLiveCard_() 호출 제거.
   // viewer 첫 카드는 다시 헤더, 그 다음 todayCard(Today's Breaks)가 두 번째 카드.
-  // (LIVE 카드는 admin 홈에만 유지)
+  // (LIVE 카드는 admin 홈 + supervisor 화면 5B에만 유지 — dealer/trainee 노출 X)
+  // §14 (2026-05-27): §8.33 옵션 A — trainee는 dealer와 동일 화면, 배지만 추가.
+  const traineeBadge = (user.category === "trainee")
+    ? `<span class="trainee-badge" title="${escapeHtml(t("staff.role_trainee"))}">🎓 ${escapeHtml(t("staff.role_trainee"))}</span>`
+    : "";
   const headerCard = `<div class="card ruby-card">
-    <h2>${escapeHtml(name)}</h2>
+    <h2>${escapeHtml(name)} ${traineeBadge}</h2>
     <p class="hint">${escapeHtml(categoryLabel_(user.category))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("shift." + user.defaultShift + ".time"))}${subExtraStr}</p>
     <p class="hint" style="margin-top:6px; font-size:11px; opacity:0.85;">⟳ ${escapeHtml(t("my.last_updated", { time: fetchedStr }))} · ${summaryStr}</p>
   </div>`;
@@ -1695,7 +1718,25 @@ function renderMy_(user) {
 
   const contactCard = `<div class="card ruby-card"><p class="hint">${t("my.contact_admin_for_off")}</p></div>`;
 
+  // §14 (2026-05-27): §10.12.8 B 화면 5B 분기 — supervisor만 todayCard 다음에
+  // No-edit notice (§8.31 옵션 A) + LIVE 카드 (§10.12.8 B) 삽입.
+  // 카드 순서: Header → Today's Breaks (1, §8.30 옵션 A — SPEC §9 규칙 3 준수)
+  //            → No-edit notice → LIVE → My Schedule → Contact Admin.
+  if (user.category === "supervisor") {
+    const supEditNotice = `<div class="card ruby-card"><p class="hint">📌 ${escapeHtml(t("super.no_edit_notice"))}</p></div>`;
+    const supContactCard = `<div class="card ruby-card"><p class="hint">${escapeHtml(t("super.contact_admin_for_break"))}</p></div>`;
+    return headerCard + todayCard + supEditNotice + renderLiveCard_() + calendarCard + supContactCard;
+  }
+
   return headerCard + todayCard + calendarCard + contactCard;
+}
+
+// §14 (2026-05-27): §10.12.8 B 화면 5B — supervisor 전용 홈 엔트리.
+// 실제 카드 조립은 renderMy_의 `if (user.category === "supervisor")` 분기.
+// 본 함수는 render()의 currentScreen===SCREEN_MY에서 supervisor일 때 호출되는 명시적 엔트리.
+// (검수자 §10.12.8 D "openMyB()" 의사코드 1:1 매핑)
+function renderSupervisorHome_(user) {
+  return renderMy_(user);
 }
 
 async function moveMyAnchor(days) {
@@ -2188,13 +2229,19 @@ function seedSearchCacheFromBoot_(initial) {
   persistCacheKey_(key, value);
 }
 
-// REQ-15: LIVE 시각 매분 갱신 (DOM 흔들림 방지 — textContent만)
-setInterval(function() {
+// REQ-15 + §14 (2026-05-27): LIVE 시각 매분 갱신 (DOM 흔들림 방지 — textContent만)
+// §14: 페이지 이탈(pagehide) 시 clearInterval 안전 처리 — 백그라운드 진입 시 tick 중지.
+//      (사실 페이지가 닫히면 timer는 자동 종료되지만, 명세 §14.8 안전성 요건 준수 + Telegram WebApp
+//       내부에서 SPA를 재마운트하는 경우 누적 timer 방지)
+let liveTickTimer_ = setInterval(function() {
   const el = document.getElementById("dash-time");
   if (!el || !bootData || !bootData.todaySummary) return;
   const d = new Date();
   el.textContent = bootData.todaySummary.date + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
 }, 60 * 1000);
+window.addEventListener("pagehide", function() {
+  if (liveTickTimer_) { clearInterval(liveTickTimer_); liveTickTimer_ = null; }
+});
 
 // P2-5: boot 후 백그라운드 prefetch — 자주 진입하는 화면만 가볍게
 function schedulePrefetch_() {
