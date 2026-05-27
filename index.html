@@ -115,6 +115,22 @@
   .break-group .gh { font-size: 13px; color: var(--text); margin-bottom: 6px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
   .break-group .gh .g-tables { font-family: monospace; }
   .break-group .gh .g-type { background: var(--bg-sec); color: var(--hint); border-radius: 8px; padding: 1px 8px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+  /* REQ-15 (2026-05-26): 관리자 홈 Dashboard 카드 */
+  .dashboard-card { background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); color: #e8f0f5; border: 1px solid #2c5364; }
+  .dashboard-card .dash-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .dashboard-card .dash-live { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: #ff6b6b; }
+  .dashboard-card .dash-time { font-family: monospace; font-size: 14px; font-weight: 700; color: #e8f0f5; }
+  .dashboard-card .dash-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+  .dashboard-card .dash-label { color: #a8c0d0; }
+  .dashboard-card .dash-value { color: #f5f9fc; font-weight: 700; }
+  .dashboard-card .dash-value.mono { font-family: monospace; font-size: 12px; }
+  .dashboard-card .dash-states { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
+  .dashboard-card .ds { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; background: rgba(0,0,0,0.3); }
+  .dashboard-card .ds .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dashboard-card .ds.vac .dot { background: var(--vac); }
+  .dashboard-card .ds.off .dot { background: var(--off); }
+  .dashboard-card .ds.pre .dot { background: var(--pre); }
+  .dashboard-card .ds.spl .dot { background: var(--spl); }
   /* REQ-7 (2026-05-26): 출근 인원 카드 */
   .attendance-card .attendance-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-bottom: 1px dashed var(--bg-sec); }
   .attendance-card .attendance-row:last-child { border-bottom: none; }
@@ -163,9 +179,18 @@
   .vac-dow.sat { color: #8ab4f8; }
   .vac-dow.sun { color: #f08a8a; }
   /* 셀 — 넉넉하게 크게 */
-  .vac-cell { aspect-ratio: 1; background: rgba(0,0,0,0.35); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; padding: 4px 2px; color: #f4e9d4; position: relative; transition: transform 0.15s ease; cursor: default; min-height: 44px; }
-  .vac-cell .d { font-size: 14px; font-weight: 700; }
-  .vac-cell .lbl { font-size: 9px; font-weight: 800; margin-top: 1px; letter-spacing: 0.4px; }
+  /* REQ-16 (2026-05-26): 셀 더 크게 — 가시성↑ */
+  .vac-cell { aspect-ratio: 1; background: rgba(0,0,0,0.35); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; padding: 4px 2px; color: #f4e9d4; position: relative; transition: transform 0.15s ease; cursor: pointer; min-height: 56px; }
+  .vac-cell .d { font-size: 16px; font-weight: 700; }
+  .vac-cell .lbl { font-size: 10px; font-weight: 800; margin-top: 2px; letter-spacing: 0.4px; }
+  .vac-cell.pending { outline: 2px dashed #f4e9d4; outline-offset: -3px; }
+  /* REQ-16: 4주 시프트별 출근 요약 카드 */
+  .vac-attendance-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .vac-att-cell { background: rgba(0,0,0,0.35); border-radius: 6px; padding: 4px 2px; text-align: center; font-size: 10px; color: #f4e9d4; min-height: 60px; }
+  .vac-att-cell .day { font-size: 13px; font-weight: 700; }
+  .vac-att-cell .row { display: flex; justify-content: space-between; gap: 2px; font-size: 9px; padding: 1px 2px; }
+  .vac-att-cell .row .lbl { color: #c5a89a; }
+  .vac-att-cell .row .v { font-weight: 700; }
   /* 상태별 컬러 (어두운 배경에 잘 보이게 채도 강화) */
   .vac-cell.vac { background: var(--vac); color: #06223d; }
   .vac-cell.off { background: var(--off); color: #3d2a00; }
@@ -275,13 +300,18 @@ const I18N = {
     "common.back":"Back","common.today":"Today","common.prev_4w":"◀ Prev 4w","common.next_4w":"Next 4w ▶",
     "common.save":"Save","common.cancel":"Cancel","common.apply":"Apply","common.delete":"Delete",
     "common.active":"Active","common.inactive":"Inactive",
+    "category.dealer":"Dealer","category.supervisor":"Supervisor","category.trainee":"Trainee",
+    "nationality.KR":"Korea","nationality.TH":"Thailand","nationality.PH":"Philippines","nationality.OTHER":"Other",
     "home.title":"Home","home.quick_actions":"Quick Actions",
     "home.find_dealer":"Find Dealer","home.vacation_range":"Vacation Range",
     "home.breaks_today":"Breaks today","home.shift_cycle":"Shift Cycle",
     "home.add_staff":"Add Staff","home.backup":"Backup",
     "home.shift_view":"Shift view","home.my_view":"My View",
+    "home.dash_attendance":"Attendance","home.dash_shift":"Shift",
+    "home.dash_tables":"Active tables","home.dash_groups":"Break groups",
     "my.title":"My View","my.todays_breaks":"Today's Breaks","my.no_breaks_today":"No break assignment today (off/vacation).",
     "my.contact_admin_for_off":"Need a day off? Contact admin.",
+    "my.supervisor_schedule_note":"Recurring schedule — applies every day until changed by admin.",
     "my.first_break":"first break","my.schedule_4w":"My Schedule · 4 weeks",
     "my.group_with":"Group: {type} with {names}","my.group_alone":"Group: {type} (alone)",
     "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
@@ -316,6 +346,8 @@ const I18N = {
     "vacation.need_dates":"Please enter both start and end dates.",
     "vacation.note_pinned":"Note: cells already pinned (manually toggled) are skipped.",
     "vacation.quick_apply":"Quick apply (range)",
+    "vacation.attendance_4w":"4-week attendance by shift",
+    "vacation.attendance_hint":"Dealer / Supervisor count per shift (M/A/N).",
     "calendar.no_pending":"No pending changes",
     "calendar.applying":"Applying {n} change(s)…",
     "calendar.applied_ok":"{ok} change(s) applied",
@@ -375,13 +407,18 @@ const I18N = {
     "common.back":"뒤로","common.today":"오늘","common.prev_4w":"◀ 이전 4주","common.next_4w":"다음 4주 ▶",
     "common.save":"저장","common.cancel":"취소","common.apply":"적용","common.delete":"삭제",
     "common.active":"재직","common.inactive":"비활성",
+    "category.dealer":"딜러","category.supervisor":"슈퍼바이저","category.trainee":"트레이니",
+    "nationality.KR":"한국","nationality.TH":"태국","nationality.PH":"필리핀","nationality.OTHER":"그외",
     "home.title":"홈","home.quick_actions":"빠른 작업",
     "home.find_dealer":"딜러 찾기","home.vacation_range":"휴가 범위",
     "home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 사이클",
     "home.add_staff":"인원 추가","home.backup":"백업",
     "home.shift_view":"시프트 보기","home.my_view":"내 휴게 보기",
+    "home.dash_attendance":"출근","home.dash_shift":"시프트",
+    "home.dash_tables":"운영 테이블","home.dash_groups":"휴게 묶음",
     "my.title":"내 휴게","my.todays_breaks":"오늘 내 휴게","my.no_breaks_today":"오늘 휴게 배정 없음 (휴무/휴가).",
     "my.contact_admin_for_off":"휴무가 필요하면 관리자에게 문의하세요.",
+    "my.supervisor_schedule_note":"고정 스케줄 — 관리자가 변경하기 전까지 매일 적용됩니다.",
     "my.first_break":"첫 휴게","my.schedule_4w":"내 스케줄 · 4주",
     "my.group_with":"묶음: {type} — {names}와 함께","my.group_alone":"묶음: {type} (혼자)",
     "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
@@ -416,6 +453,8 @@ const I18N = {
     "vacation.need_dates":"시작일과 종료일을 모두 입력해주세요.",
     "vacation.note_pinned":"참고: 이미 직접 토글한 셀(pinned)은 건너뜁니다.",
     "vacation.quick_apply":"빠른 입력 (범위)",
+    "vacation.attendance_4w":"4주 시프트별 출근",
+    "vacation.attendance_hint":"각 날짜 시프트(M/A/N)별 딜러/슈퍼바이저 출근 인원.",
     "calendar.no_pending":"적용할 변경이 없습니다",
     "calendar.applying":"{n}개 변경 적용 중…",
     "calendar.applied_ok":"{ok}개 변경 적용됨",
@@ -485,6 +524,15 @@ function setLang(lang) {
 function detectInitialLang() { try { const s = localStorage.getItem("scheduleApp.lang"); if (s === "en" || s === "ko") return s; } catch (e) {} const tg = window.Telegram && window.Telegram.WebApp; const c = tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code; return (c && String(c).toLowerCase().startsWith("ko")) ? "ko" : "en"; }
 function t(key, vars) { const dict = I18N[LANG] || I18N.en; let s = dict[key]; if (s == null) { s = "[" + key + "]"; console.warn("[i18n] missing:", key, LANG); } if (vars) Object.keys(vars).forEach(k => s = s.replace(new RegExp("\\{" + k + "\\}", "g"), vars[k])); return s; }
 function escapeHtml(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+// REQ-10/REQ-12 (2026-05-26): 카테고리/국적 i18n 헬퍼
+function categoryLabel_(category) { return t("category." + (category || "dealer")); }
+function categoryIcon_(category) {
+  if (category === "dealer") return "🃏";
+  if (category === "supervisor") return "🎯";
+  if (category === "trainee") return "📘";
+  return "👤";
+}
+function nationalityLabel_(code) { if (!code) return ""; return t("nationality." + code); }
 
 function pad2(n) { return String(n).padStart(2, "0"); }
 function fmtDate(d) { return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate()); }
@@ -725,6 +773,7 @@ let staffFilter = "active";  // "active" | "inactive" | "all"
 let staffSearchQ = "";
 let staffEditingId = null;   // 인라인 편집 중인 emp-id
 let staffAddOpen = false;    // 신규 추가 폼 펼침
+let staffSaving = false;     // REQ-9 (2026-05-26): 중복 등록 방지 플래그
 
 function navigate(screen) { currentScreen = screen; render(); }
 
@@ -823,12 +872,42 @@ function renderShiftAndAnchor_() {
 }
 
 function renderAdminHome_(user) {
-  // REQ-1 (2026-05-26): 관리자 홈에서 시프트뷰/색상 범례/내휴게보기 제거. Welcome + Quick Actions만.
+  // REQ-15 (2026-05-26): Option D — 대시보드 + LIVE 시각 + 다음 휴게 + 상태 카운트.
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
+  const summary = (bootData && bootData.todaySummary) || null;
+  const liveTime = (function() {
+    const d = new Date();
+    return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  })();
+  let dashboardCard = "";
+  if (summary) {
+    const attended = summary.attendance || 0;
+    const total = summary.totalDealers || 0;
+    const tables = (summary.activeTables || []).join(", ") || "—";
+    const cs = summary.stateCounts || {};
+    const groupCnt = summary.groupCount || 0;
+    dashboardCard = `<div class="card dashboard-card">
+      <div class="dash-head">
+        <span class="dash-live">🔴 LIVE</span>
+        <span class="dash-time" id="dash-time">${escapeHtml(summary.date + " " + liveTime)}</span>
+      </div>
+      <div class="dash-row"><span class="dash-label">${t("home.dash_attendance")}</span><span class="dash-value">${attended} / ${total}</span></div>
+      <div class="dash-row"><span class="dash-label">${t("home.dash_shift")}</span><span class="dash-value">${escapeHtml(t("shift." + summary.shift + ".full"))} · ${escapeHtml(t("shift." + summary.shift + ".time"))}</span></div>
+      <div class="dash-row"><span class="dash-label">${t("home.dash_tables")}</span><span class="dash-value mono">${escapeHtml(tables)}</span></div>
+      <div class="dash-row"><span class="dash-label">${t("home.dash_groups")}</span><span class="dash-value">${groupCnt}</span></div>
+      <div class="dash-states">
+        <span class="ds vac"><span class="dot"></span>VAC ${cs.vacation || 0}</span>
+        <span class="ds off"><span class="dot"></span>OFF ${cs.dayoff || 0}</span>
+        <span class="ds pre"><span class="dot"></span>PRE ${cs.pre_practice || 0}</span>
+        <span class="ds spl"><span class="dot"></span>SPL ${cs.special || 0}</span>
+      </div>
+    </div>`;
+  }
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
-      <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p>
+      <p class="hint">${escapeHtml(categoryLabel_(user.category))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p>
     </div>
+    ${dashboardCard}
     <div class="card"><h2>${t("home.quick_actions")}</h2>
       <div class="btn-row">
         <button class="btn" data-nav="${SCREEN_FIND_DEALER}"><span class="emo">👤</span>${t("home.find_dealer")}</button>
@@ -844,7 +923,7 @@ function renderViewerHome_(user) {
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_viewer", { name }))}</h2>
-      <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_viewer"))}</p></div>
+      <p class="hint">${escapeHtml(categoryLabel_(user.category))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_viewer"))}</p></div>
     <div class="card"><button class="btn" data-nav="${SCREEN_MY}" style="width:100%;">👁 ${t("home.my_view")}</button></div>
     <div class="card"><button class="btn ghost" data-nav="${SCREEN_FIND_DEALER}" style="width:100%;">👤 ${t("home.find_dealer")}</button></div>
     <div class="card"><p class="hint">${t("my.contact_admin_for_off")}</p></div>`;
@@ -915,11 +994,11 @@ function updateSearchUI_() {
 
 function renderStaffCard_(s) {
   const name = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id);
-  // REQ-2/REQ-3: 국적 + 테이블 부제에 추가
+  // REQ-2/REQ-11/REQ-12: 국적 + 카테고리 i18n
+  // REQ-13: defaultTable 표시 제거 (그룹 자동 할당)
   const extras = [];
-  if (s.nationality) extras.push(escapeHtml(s.nationality));
-  if (s.defaultTable) extras.push(escapeHtml(s.defaultTable));
-  const sub = (s.category === "dealer" ? "🃏" : "🎯") + " " + escapeHtml(s.category) + " · " + escapeHtml(t("shift." + s.defaultShift + ".full")) + (extras.length ? " · " + extras.join(" · ") : "");
+  if (s.nationality) extras.push(escapeHtml(nationalityLabel_(s.nationality)));
+  const sub = categoryIcon_(s.category) + " " + escapeHtml(categoryLabel_(s.category)) + " · " + escapeHtml(t("shift." + s.defaultShift + ".full")) + (extras.length ? " · " + extras.join(" · ") : "");
   let statusHtml;
   if (s.todayState === "vacation") statusHtml = `<span class="status vac">${t("state.vacation.short")}</span>`;
   else if (s.todayState === "dayoff") statusHtml = `<span class="status off">${t("state.dayoff.short")}</span>`;
@@ -1415,14 +1494,34 @@ function renderMy_(user) {
     : escapeHtml(t("my.no_cells"));
   const headerCard = `<div class="card ruby-card">
     <h2>${escapeHtml(name)}</h2>
-    <p class="hint">${escapeHtml(user.category)} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("shift." + user.defaultShift + ".time"))}${subExtraStr}</p>
+    <p class="hint">${escapeHtml(categoryLabel_(user.category))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("shift." + user.defaultShift + ".time"))}${subExtraStr}</p>
     <p class="hint" style="margin-top:6px; font-size:11px; opacity:0.85;">⟳ ${escapeHtml(t("my.last_updated", { time: fetchedStr }))} · ${summaryStr}</p>
   </div>`;
 
   // Today's Breaks
   let todayCard = "";
+  // SUP-1 (2026-05-26): 슈퍼바이저 본인의 supervisorBreaks 우선 표시 (영구 스케줄)
+  let mySupBreaks = [];
+  if (user.category === "supervisor" && myData.breaksData && myData.breaksData.supervisorBreaks) {
+    mySupBreaks = myData.breaksData.supervisorBreaks.filter(function(b) {
+      return String(b.supervisorId) === String(user.id);
+    });
+    // 시간순 정렬
+    mySupBreaks.sort(function(a, b) { return String(a.time).localeCompare(String(b.time)); });
+  }
   const myGroup = findMyGroup_(user.id, myData.breaksData);
-  if (!myGroup) {
+
+  if (mySupBreaks.length > 0) {
+    // 슈퍼바이저 — 본인 영구 스케줄 표시
+    const rowsHtml = mySupBreaks.map(function(b, i) {
+      return `<div class="my-break-row${i === 0 ? " first" : ""}"><span class="clock">⏰</span><span class="time">${escapeHtml(b.time)}</span><span class="label">— ${escapeHtml(String(b.minutes))}m</span></div>`;
+    }).join("");
+    todayCard = `<div class="card ruby-card">
+      <h2>${t("my.todays_breaks")} · ${escapeHtml(todayIso())}</h2>
+      <div class="my-breaks-list">${rowsHtml}</div>
+      <p class="hint" style="margin-top:8px; font-size:11px;">${t("my.supervisor_schedule_note")}</p>
+    </div>`;
+  } else if (!myGroup) {
     todayCard = `<div class="card ruby-card">
       <h2>${t("my.todays_breaks")} · ${escapeHtml(todayIso())}</h2>
       <p class="hint">${t("my.no_breaks_today")}</p>
@@ -1556,21 +1655,26 @@ function renderStaff_(user) {
     <div><label>${t("staff.field_name_en")}</label><input type="text" id="new-name-en" placeholder="HARU LIM"></div>
     <div style="margin-top:6px;"><label>${t("staff.field_name_ko")}</label><input type="text" id="new-name-ko" placeholder="임하루"></div>
     <div class="row2" style="margin-top:6px;">
-      <div><label>${t("staff.field_role")}</label><select id="new-category"><option value="dealer">${t("search.filter_dealer")}</option><option value="supervisor">${t("search.filter_supervisor")}</option></select></div>
+      <div><label>${t("staff.field_role")}</label><select id="new-category">
+        <option value="dealer">${t("category.dealer")}</option>
+        <option value="supervisor">${t("category.supervisor")}</option>
+        <option value="trainee">${t("category.trainee")}</option>
+      </select></div>
       <div><label>${t("staff.field_shift")}</label><select id="new-shift"><option value="M">${t("shift.M.full")}</option><option value="A" selected>${t("shift.A.full")}</option><option value="N">${t("shift.N.full")}</option></select></div>
     </div>
     <div class="row2" style="margin-top:6px;">
       <div><label>${t("staff.field_join")}</label><input type="date" id="new-join" value="${todayIso()}"></div>
       <div><label>${t("staff.field_telegram")}</label><input type="text" id="new-tgid" placeholder="0"></div>
     </div>
-    <div class="row2" style="margin-top:6px;">
-      <div><label>${t("staff.field_nationality")}</label><input type="text" id="new-nationality" placeholder="KR / PH / EN ..."></div>
-      <div><label>${t("staff.field_table")}</label>
-        <select id="new-table">
-          <option value="">—</option>
-          ${((bootData && bootData.tables) || []).map(tbl => `<option value="${escapeHtml(tbl)}">${escapeHtml(tbl)}</option>`).join("")}
-        </select>
-      </div>
+    <div style="margin-top:6px;">
+      <label>${t("staff.field_nationality")}</label>
+      <select id="new-nationality">
+        <option value="">—</option>
+        <option value="KR">${t("nationality.KR")}</option>
+        <option value="TH">${t("nationality.TH")}</option>
+        <option value="PH">${t("nationality.PH")}</option>
+        <option value="OTHER">${t("nationality.OTHER")}</option>
+      </select>
     </div>
     <button class="btn" id="new-save" style="margin-top:10px; width:100%;">${t("staff.save")}</button>
   </div></div>` : "";
@@ -1585,7 +1689,7 @@ function renderStaffMgmtCard_(s) {
   const name = (LANG === "ko" && s.name_ko) ? s.name_ko : (s.name_en || s.id);
   const editing = (staffEditingId === s.id);
   if (editing) return renderStaffEditForm_(s);
-  const sub = (s.category === "dealer" ? "🃏 " : "🎯 ") + escapeHtml(s.category) + " · " + escapeHtml(t("shift." + s.defaultShift + ".full"));
+  const sub = categoryIcon_(s.category) + " " + escapeHtml(categoryLabel_(s.category)) + " · " + escapeHtml(t("shift." + s.defaultShift + ".full")) + (s.nationality ? " · " + escapeHtml(nationalityLabel_(s.nationality)) : "");
   const badge = s.active ? `<span class="badge-active">${t("common.active") || "Active"}</span>` : `<span class="badge-inactive">${t("staff.filter_inactive")}</span>`;
   return `<div class="staff-mgmt-card ${s.active ? "" : "inactive"}">
     <div class="top">
@@ -1608,8 +1712,9 @@ function renderStaffEditForm_(s) {
       <div class="row2">
         <div><label>${t("staff.field_role")}</label>
           <select data-edit-category>
-            <option value="dealer" ${s.category === "dealer" ? "selected" : ""}>${t("search.filter_dealer")}</option>
-            <option value="supervisor" ${s.category === "supervisor" ? "selected" : ""}>${t("search.filter_supervisor")}</option>
+            <option value="dealer" ${s.category === "dealer" ? "selected" : ""}>${t("category.dealer")}</option>
+            <option value="supervisor" ${s.category === "supervisor" ? "selected" : ""}>${t("category.supervisor")}</option>
+            <option value="trainee" ${s.category === "trainee" ? "selected" : ""}>${t("category.trainee")}</option>
           </select>
         </div>
         <div><label>${t("staff.field_shift")}</label>
@@ -1621,14 +1726,15 @@ function renderStaffEditForm_(s) {
         </div>
       </div>
       <div><label>${t("staff.field_telegram")}</label><input type="text" data-edit-tgid value="${escapeHtml(s.telegramUserId || "")}"></div>
-      <div class="row2">
-        <div><label>${t("staff.field_nationality")}</label><input type="text" data-edit-nationality value="${escapeHtml(s.nationality || "")}" placeholder="KR / PH / EN ..."></div>
-        <div><label>${t("staff.field_table")}</label>
-          <select data-edit-table>
-            <option value="">—</option>
-            ${((bootData && bootData.tables) || []).map(tbl => `<option value="${escapeHtml(tbl)}" ${s.defaultTable === tbl ? "selected" : ""}>${escapeHtml(tbl)}</option>`).join("")}
-          </select>
-        </div>
+      <div>
+        <label>${t("staff.field_nationality")}</label>
+        <select data-edit-nationality>
+          <option value="">—</option>
+          <option value="KR" ${s.nationality === "KR" ? "selected" : ""}>${t("nationality.KR")}</option>
+          <option value="TH" ${s.nationality === "TH" ? "selected" : ""}>${t("nationality.TH")}</option>
+          <option value="PH" ${s.nationality === "PH" ? "selected" : ""}>${t("nationality.PH")}</option>
+          <option value="OTHER" ${s.nationality === "OTHER" ? "selected" : ""}>${t("nationality.OTHER")}</option>
+        </select>
       </div>
       <div class="actions">
         <button class="btn" data-staff-save="${escapeHtml(s.id)}">${t("staff.save")}</button>
@@ -1639,6 +1745,8 @@ function renderStaffEditForm_(s) {
 }
 
 async function addStaffSubmit() {
+  // REQ-9 (2026-05-26): 중복 등록 방지 — 진행 중이면 무시
+  if (staffSaving) return;
   const name_en = document.getElementById("new-name-en").value.trim();
   if (!name_en) { showToast(t("toast.action_failed", { msg: "name_en required" })); return; }
   const name_ko = document.getElementById("new-name-ko").value.trim();
@@ -1646,11 +1754,14 @@ async function addStaffSubmit() {
   const defaultShift = document.getElementById("new-shift").value;
   const joinDate = document.getElementById("new-join").value;
   const telegramUserId = document.getElementById("new-tgid").value.trim();
-  // REQ-2/REQ-3
+  // REQ-2/REQ-11: nationality dropdown (KR/TH/PH/OTHER 코드)
+  // REQ-13: defaultTable 폼에서 제거 — 빈 값으로 전송 (서버 backward compat)
   const natEl = document.getElementById("new-nationality");
-  const tblEl = document.getElementById("new-table");
-  const nationality = natEl ? natEl.value.trim() : "";
-  const defaultTable = tblEl ? tblEl.value : "";
+  const nationality = natEl ? natEl.value : "";
+  const defaultTable = "";
+  staffSaving = true;
+  const saveBtn = document.getElementById("new-save");
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "..."; }
   try {
     const r = await apiPost("addStaff", { name_en, name_ko, category, defaultShift, joinDate, telegramUserId, nationality, defaultTable });
     invalidateCache();  // 직원 추가는 전체 캐시 영향 (search/staff/my)
@@ -1660,6 +1771,8 @@ async function addStaffSubmit() {
       await loadStaffList_();
     } else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+  staffSaving = false;
+  // saveBtn은 위 loadStaffList_가 새로 렌더링하면서 재생성됨
 }
 
 async function saveStaffEdit(id) {
@@ -1670,9 +1783,9 @@ async function saveStaffEdit(id) {
     name_ko: card.querySelector("[data-edit-name-ko]").value.trim(),
     category: card.querySelector("[data-edit-category]").value,
     defaultShift: card.querySelector("[data-edit-shift]").value,
-    // REQ-2/REQ-3: 항상 보냄 (빈 값 = 명시적으로 비움)
-    nationality: (card.querySelector("[data-edit-nationality]") || {}).value || "",
-    defaultTable: (card.querySelector("[data-edit-table]") || {}).value || ""
+    // REQ-2/REQ-11: nationality dropdown (코드 값)
+    // REQ-13: defaultTable 폼 제거 → 갱신 안 함
+    nationality: (card.querySelector("[data-edit-nationality]") || {}).value || ""
   };
   // BUG-1 (2026-05-26): TG ID 입력란이 비어있으면 body에 포함 안 함 → 기존 값 보존.
   // 명시적으로 비우려면 별도 UI 필요(후속). 빈 값 = "건드리지 마" 시맨틱.
@@ -1775,9 +1888,8 @@ function renderVacation_(user) {
     });
     const optsHtml = opts.map(function(e) {
       const nm = (LANG === "ko" && e.name_ko) ? e.name_ko : (e.name_en || e.id);
-      const extras = [e.category === "dealer" ? "🃏" : "🎯"];
-      if (e.defaultTable) extras.push(e.defaultTable);
-      if (e.nationality) extras.push(e.nationality);
+      const extras = [categoryIcon_(e.category) + " " + categoryLabel_(e.category)];
+      if (e.nationality) extras.push(nationalityLabel_(e.nationality));
       return `<option value="${escapeHtml(e.id)}" ${e.id === vacationEmpId ? "selected" : ""}>${escapeHtml(nm + " (" + extras.join(" · ") + ")")}</option>`;
     }).join("");
     quickForm = `<div class="card vac-card">
@@ -1835,11 +1947,10 @@ function renderVacation_(user) {
       else if (s === "pre_practice") cPre++; else if (s === "special") cSpl++;
     });
     const extras = [];
-    extras.push(e.category === "dealer" ? "🃏" : "🎯");
-    if (e.defaultTable) extras.push(e.defaultTable);
-    if (e.nationality) extras.push(e.nationality);
+    extras.push(categoryIcon_(e.category) + " " + categoryLabel_(e.category));
+    if (e.nationality) extras.push(nationalityLabel_(e.nationality));
 
-    return `<div class="card vac-card vac-emp-card">
+    return `<div class="card ruby-card vac-emp-card">
       <div class="vac-emp-head">
         <div class="vac-emp-name">${escapeHtml(nm)}</div>
         <div class="vac-emp-meta">${extras.map(escapeHtml).join(" · ")}</div>
@@ -1854,7 +1965,26 @@ function renderVacation_(user) {
     </div>`;
   }).join("");
 
-  return headerCard + quickForm + empCards;
+  // REQ-16: 4주 시프트별 출근 요약 카드 (하단)
+  const dailyAtt = vacationOverview.dailyShiftAttendance || {};
+  const attCellsHtml = [];
+  for (let i = 0; i < 28; i++) {
+    const iso = fmtDate(addDays(parseDate(anchorIso), i));
+    const c = dailyAtt[iso] || { M: { dealer: 0, supervisor: 0 }, A: { dealer: 0, supervisor: 0 }, N: { dealer: 0, supervisor: 0 } };
+    attCellsHtml.push(`<div class="vac-att-cell">
+      <div class="day">${parseDate(iso).getDate()}</div>
+      <div class="row"><span class="lbl">M</span><span class="v">${c.M.dealer}/${c.M.supervisor}</span></div>
+      <div class="row"><span class="lbl">A</span><span class="v">${c.A.dealer}/${c.A.supervisor}</span></div>
+      <div class="row"><span class="lbl">N</span><span class="v">${c.N.dealer}/${c.N.supervisor}</span></div>
+    </div>`);
+  }
+  const attendanceCard = `<div class="card ruby-card">
+    <h2>${t("vacation.attendance_4w")}</h2>
+    <p class="hint" style="margin-bottom:8px;">${t("vacation.attendance_hint")}</p>
+    <div class="vac-grid">${dowHeader}${attCellsHtml.join("")}</div>
+  </div>`;
+
+  return headerCard + quickForm + empCards + attendanceCard;
 }
 
 async function submitVacationRange() {
@@ -2058,6 +2188,14 @@ function seedSearchCacheFromBoot_(initial) {
   readCache.set(key, { expires: Date.now() + READ_CACHE_TTL_MS, value: value });
   persistCacheKey_(key, value);
 }
+
+// REQ-15: LIVE 시각 매분 갱신 (DOM 흔들림 방지 — textContent만)
+setInterval(function() {
+  const el = document.getElementById("dash-time");
+  if (!el || !bootData || !bootData.todaySummary) return;
+  const d = new Date();
+  el.textContent = bootData.todaySummary.date + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+}, 60 * 1000);
 
 // P2-5: boot 후 백그라운드 prefetch — 자주 진입하는 화면만 가볍게
 function schedulePrefetch_() {
