@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -108,6 +109,14 @@
   .vacation-form .apply-row .btn { flex: 1; }
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #fff; padding: 10px 18px; border-radius: 18px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.25s; pointer-events: none; max-width: 90%; text-align: center; }
   .toast.show { opacity: 1; }
+  /* REQ-21 (2026-05-26): 슬롯 편집 모달 */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal-content { background: var(--bg-sec); color: var(--text); border-radius: 12px; padding: 16px; min-width: 280px; max-width: 90%; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+  .modal-content h3 { margin: 0 0 10px; font-size: 16px; color: var(--text); }
+  .modal-content label { display: block; font-size: 12px; color: var(--hint); }
+  .modal-content select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--hint); background: var(--bg); color: var(--text); font-size: 13px; }
+  .break-slots .row[data-slot-edit] { cursor: pointer; }
+  .break-slots .row[data-slot-edit]:hover { background: rgba(255,255,255,0.05); border-radius: 4px; }
   .breaks-summary { font-size: 12px; color: var(--hint); margin-bottom: 8px; }
   .breaks-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
   .break-group { background: var(--bg); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 4px solid var(--triple); }
@@ -131,6 +140,17 @@
   .dashboard-card .ds.off .dot { background: var(--off); }
   .dashboard-card .ds.pre .dot { background: var(--pre); }
   .dashboard-card .ds.spl .dot { background: var(--spl); }
+  /* REQ-19: 휴게 매트릭스 */
+  .bm-wrap { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); overflow-x: auto; }
+  .break-matrix { width: 100%; border-collapse: separate; border-spacing: 3px; font-size: 11px; color: #f5f9fc; }
+  .break-matrix th, .break-matrix td { padding: 6px 4px; text-align: center; background: rgba(0,0,0,0.3); border-radius: 4px; min-width: 38px; }
+  .break-matrix th { font-weight: 700; color: #a8c0d0; font-size: 11px; }
+  .break-matrix .bm-th-label { color: #f5f9fc; }
+  .break-matrix .bm-td-label { font-family: monospace; font-weight: 700; color: #a8c0d0; }
+  .break-matrix .bm-td { color: #e8f0f5; font-weight: 600; min-height: 24px; }
+  .break-matrix .bm-td.triple { background: rgba(118, 75, 162, 0.18); }
+  .break-matrix .bm-td.pair { background: rgba(76, 175, 145, 0.18); }
+  .break-matrix .bm-td:empty::before { content: "·"; opacity: 0.3; }
   /* REQ-7 (2026-05-26): 출근 인원 카드 */
   .attendance-card .attendance-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-bottom: 1px dashed var(--bg-sec); }
   .attendance-card .attendance-row:last-child { border-bottom: none; }
@@ -307,7 +327,7 @@ const I18N = {
     "home.breaks_today":"Breaks today","home.shift_cycle":"Shift Cycle",
     "home.add_staff":"Add Staff","home.backup":"Backup",
     "home.shift_view":"Shift view","home.my_view":"My View",
-    "home.dash_attendance":"Dealer attendance","home.dash_attendance_sup":"Supervisor attendance","home.dash_shift":"Shift",
+    "home.dash_attendance":"Dealer attendance","home.dash_attendance_sup":"Supervisor attendance","home.dash_attendance_trn":"Trainee attendance","home.dash_shift":"Shift",
     "home.dash_tables":"Active tables","home.dash_groups":"Break groups",
     "my.title":"My View","my.todays_breaks":"Today's Breaks","my.no_breaks_today":"No break assignment today (off/vacation).",
     "my.contact_admin_for_off":"Need a day off? Contact admin.",
@@ -367,6 +387,8 @@ const I18N = {
     "breaks.title":"Breaks","breaks.header":"{shift} · {date}",
     "breaks.dealers_active":"{n} dealers active","breaks.dealer_breaks":"Dealer Breaks (auto)",
     "breaks.attendance_title":"Attendance",
+    "breaks.slot_edit_title":"Edit slot — {table} · {slot}",
+    "breaks.slot_updated":"Slot updated",
     "breaks.attendance_total":"Total dealers",
     "breaks.attendance_people":" people",
     "breaks.attendance_tables_active":"Tables in operation",
@@ -414,7 +436,7 @@ const I18N = {
     "home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 사이클",
     "home.add_staff":"인원 추가","home.backup":"백업",
     "home.shift_view":"시프트 보기","home.my_view":"내 휴게 보기",
-    "home.dash_attendance":"딜러 출근","home.dash_attendance_sup":"슈퍼바이저 출근","home.dash_shift":"시프트",
+    "home.dash_attendance":"딜러 출근","home.dash_attendance_sup":"슈퍼바이저 출근","home.dash_attendance_trn":"트레이니 출근","home.dash_shift":"시프트",
     "home.dash_tables":"운영 테이블","home.dash_groups":"휴게 묶음",
     "my.title":"내 휴게","my.todays_breaks":"오늘 내 휴게","my.no_breaks_today":"오늘 휴게 배정 없음 (휴무/휴가).",
     "my.contact_admin_for_off":"휴무가 필요하면 관리자에게 문의하세요.",
@@ -474,6 +496,8 @@ const I18N = {
     "breaks.title":"휴게","breaks.header":"{shift} · {date}",
     "breaks.dealers_active":"출근 딜러 {n}명","breaks.dealer_breaks":"딜러 휴게 (자동)",
     "breaks.attendance_title":"출근 인원",
+    "breaks.slot_edit_title":"슬롯 편집 — {table} · {slot}",
+    "breaks.slot_updated":"슬롯 갱신됨",
     "breaks.attendance_total":"총 인원",
     "breaks.attendance_people":"명",
     "breaks.attendance_tables_active":"운영 테이블",
@@ -871,6 +895,62 @@ function renderShiftAndAnchor_() {
       </div></div>`;
 }
 
+// REQ-19 (2026-05-26): 휴게 매트릭스 — 와이어프레임대로 TABLE × 시간 슬롯
+function renderBreakMatrix_(summary) {
+  if (!summary || !Array.isArray(summary.groups) || !Array.isArray(summary.tables)) return "";
+  const tableList = summary.tables;
+  const groups = summary.groups;
+  const dealerNames = summary.dealerNames || {};
+
+  // table → group (첫 테이블 기준)
+  const tableToGroup = {};
+  groups.forEach(function(g) {
+    if (g.tables && g.tables.length > 0) tableToGroup[g.tables[0]] = g;
+  });
+
+  const dealerName = function(empId) {
+    if (!empId) return "";
+    const v = dealerNames[empId];
+    if (!v) return empId;
+    return (LANG === "ko" && v.ko) ? v.ko : (v.en || empId);
+  };
+
+  const tripleSlots = ["00", "20", "40"];
+  const pairSlots = ["00", "30"];
+
+  // 헤더
+  let html = '<div class="bm-wrap"><table class="break-matrix"><thead><tr>';
+  html += '<th class="bm-th-label">TABLE</th>';
+  tableList.forEach(function(t) { html += '<th>' + escapeHtml(t) + '</th>'; });
+  html += '</tr></thead><tbody>';
+
+  // Triple 슬롯 행
+  tripleSlots.forEach(function(slot) {
+    html += '<tr><td class="bm-td-label">' + slot + '"</td>';
+    tableList.forEach(function(t) {
+      const g = tableToGroup[t];
+      const isTriple = g && g.type === "triple";
+      const empId = isTriple && g.slots ? (g.slots[slot] || "") : "";
+      html += '<td class="' + (isTriple ? "bm-td triple" : "bm-td") + '">' + escapeHtml(dealerName(empId)) + '</td>';
+    });
+    html += '</tr>';
+  });
+  // Pair 슬롯 행
+  pairSlots.forEach(function(slot) {
+    html += '<tr><td class="bm-td-label">' + slot + '"</td>';
+    tableList.forEach(function(t) {
+      const g = tableToGroup[t];
+      const isPair = g && g.type === "pair";
+      const empId = isPair && g.slots ? (g.slots[slot] || "") : "";
+      html += '<td class="' + (isPair ? "bm-td pair" : "bm-td") + '">' + escapeHtml(dealerName(empId)) + '</td>';
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
 function renderAdminHome_(user) {
   // REQ-15 (2026-05-26): Option D — 대시보드 + LIVE 시각 + 다음 휴게 + 상태 카운트.
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
@@ -893,6 +973,7 @@ function renderAdminHome_(user) {
       </div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_attendance")}</span><span class="dash-value">${attended} / ${total}</span></div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_attendance_sup")}</span><span class="dash-value">${summary.supervisorAttendance || 0} / ${summary.totalSupervisors || 0}</span></div>
+      <div class="dash-row"><span class="dash-label">${t("home.dash_attendance_trn")}</span><span class="dash-value">${summary.traineeAttendance || 0} / ${summary.totalTrainees || 0}</span></div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_shift")}</span><span class="dash-value">${escapeHtml(t("shift." + summary.shift + ".full"))} · ${escapeHtml(t("shift." + summary.shift + ".time"))}</span></div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_tables")}</span><span class="dash-value mono">${escapeHtml(tables)}</span></div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_groups")}</span><span class="dash-value">${groupCnt}</span></div>
@@ -902,6 +983,7 @@ function renderAdminHome_(user) {
         <span class="ds pre"><span class="dot"></span>PRE ${cs.pre_practice || 0}</span>
         <span class="ds spl"><span class="dot"></span>SPL ${cs.special || 0}</span>
       </div>
+      ${renderBreakMatrix_(summary)}
     </div>`;
   }
   return `
@@ -1255,7 +1337,8 @@ function renderBreaks_(user) {
     <p class="hint">${escapeHtml(t("breaks.summary", { triples, pairs, total }))} &nbsp;<span class="lock-pill ${breaksData.locked ? "locked" : "unlocked"}">${breaksData.locked ? "🔒 " + t("breaks.locked") : "🔓 " + t("breaks.unlocked")}</span></p>
     ${isAdmin ? `<div class="breaks-actions"><button class="btn ghost small" id="breaks-recompute" ${breaksData.locked ? "disabled" : ""}>${t("breaks.recompute")}</button><button class="btn ghost small" id="breaks-lock-toggle">${breaksData.locked ? t("breaks.unlock") : t("breaks.lock")}</button></div>` : ""}
   </div>`;
-  const hourChips = `<div class="hours-strip">${[0,1,2,3,4,5,6,7].map(h => `<span class="hour-chip ${breaksHourOffset === h ? "active" : ""}" data-hour-offset="${h}">${escapeHtml(t("breaks.hour_offset", { h: h+1 }))}</span>`).join("")}</div>`;
+  // REQ-20 (2026-05-26): 시간 칩 제거 — 같은 패턴이 매 시간 반복이라 불필요
+  const hourChips = "";
   // REQ-3: 서버 employeeInfo 우선, fallback으로 searchResults
   const empInfoMap = breaksData.employeeInfo || {};
   const lookupEmp_ = function(empId) {
@@ -1274,6 +1357,7 @@ function renderBreaks_(user) {
     return { name: empId, defaultTable: "" };
   };
   // FIX-2 (2026-05-26): 그룹 라벨 = 테이블 번호 (예: "C11, C12") + 타입 칩 추가
+  // REQ-21 (2026-05-26): 슬롯 클릭 → 수동 편집 (groupIndex+slotKey dataset)
   const groupsHtml = groups.length === 0 ? `<p class="hint">${t("breaks.no_dealers")}</p>` :
     groups.map((g, i) => {
       const slotKeys = g.type === "triple" ? ["00","20","40"] : ["00","30"];
@@ -1283,11 +1367,13 @@ function renderBreaks_(user) {
       const rows = slotKeys.map(k => {
         const empId = g.slots[k];
         const info = empId ? lookupEmp_(empId) : null;
-        // REQ-7 (2026-05-26): 빈 slot은 — 로 깔끔히
         const nameLabel = info ? info.name : (empId || "—");
         const isEmpty = !empId;
-        const tm = computeSlotTime_(breaksData.shiftStartTime, k, breaksHourOffset, breaksShift);
-        return `<div class="row${isEmpty ? " empty" : ""}"><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(nameLabel)}</span></div>`;
+        // REQ-20 (2026-05-26): 시간을 분 단위로 표시 (00", 30" 등) — 매 시간 반복 패턴
+        const tm = k + '"';
+        // REQ-21: dataset에 그룹 인덱스 + slotKey 인코딩 (admin 클릭으로 편집)
+        const editAttr = (bootData && bootData.user && bootData.user.isAdmin) ? ` data-slot-edit="${i}:${escapeHtml(k)}"` : "";
+        return `<div class="row${isEmpty ? " empty" : ""}"${editAttr}><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(nameLabel)}</span></div>`;
       }).join("");
       return `<div class="break-group ${g.type === "pair" ? "pair" : ""}"><div class="gh"><span class="g-tables">${escapeHtml(tableLabel)}</span> <span class="g-type">${escapeHtml(typeChip)}</span></div><div class="break-slots">${rows}</div></div>`;
     }).join("");
@@ -1379,6 +1465,78 @@ async function addSupervisorSlot(supId) {
     if (r && r.ok && r.data) { breaksData.supervisorBreaks.push(r.data); showToast(t("toast.super_added")); render(); }
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+}
+
+// REQ-21 (2026-05-26): 모달 클릭 이벤트 위임 (document 레벨 — modal은 body 직속)
+document.addEventListener("click", function(e) {
+  if (e.target.id === "slot-edit-cancel") { closeSlotEdit(); return; }
+  // 백드롭 클릭으로 닫기
+  if (e.target.id === "slot-edit-modal") { closeSlotEdit(); return; }
+  const slotSave = e.target.closest("[data-slot-save]");
+  if (slotSave) {
+    const parts = String(slotSave.dataset.slotSave).split(":");
+    submitSlotEdit(parseInt(parts[0], 10), parts[1]);
+    return;
+  }
+});
+
+async function openSlotEdit(groupIndex, slotKey) {
+  if (!breaksData) return;
+  const g = (breaksData.groups || [])[groupIndex];
+  if (!g) return;
+  const currentEmpId = g.slots[slotKey] || "";
+  // 활성 dealer 후보 (자기 시프트 무관, admin이 결정)
+  const candidates = [];
+  const empInfo = breaksData.employeeInfo || {};
+  Object.keys(empInfo).forEach(function(id) {
+    const v = empInfo[id];
+    const nm = (LANG === "ko" && v.name_ko) ? v.name_ko : (v.name_en || id);
+    candidates.push({ id: id, name: nm });
+  });
+  candidates.sort(function(a, b) { return a.name.localeCompare(b.name); });
+  const optsHtml = candidates.map(function(c) {
+    return `<option value="${escapeHtml(c.id)}" ${c.id === currentEmpId ? "selected" : ""}>${escapeHtml(c.name)}</option>`;
+  }).join("");
+  const tableLabel = (g.tables || []).join(", ") || ("Group " + (groupIndex + 1));
+  const html = `<div class="modal-backdrop" id="slot-edit-modal">
+    <div class="modal-content">
+      <h3>${escapeHtml(t("breaks.slot_edit_title", { table: tableLabel, slot: slotKey + '"' }))}</h3>
+      <label>${t("vacation.select_employee")}</label>
+      <select id="slot-edit-dealer" style="margin-top:6px;">
+        <option value="">— (${escapeHtml(t("breaks.no_slots"))}) —</option>
+        ${optsHtml}
+      </select>
+      <div class="actions" style="margin-top:12px; display:flex; gap:8px;">
+        <button class="btn" id="slot-edit-save" data-slot-save="${groupIndex}:${escapeHtml(slotKey)}">${t("staff.save")}</button>
+        <button class="btn ghost" id="slot-edit-cancel">${t("staff.cancel")}</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML("beforeend", html);
+}
+
+async function submitSlotEdit(groupIndex, slotKey) {
+  const sel = document.getElementById("slot-edit-dealer");
+  if (!sel) return;
+  const newEmpId = sel.value;
+  try {
+    const r = await apiPost("setBreakSlot", { date: breaksDate, shift: breaksShift, groupIndex: groupIndex, slotKey: slotKey, employeeId: newEmpId });
+    invalidateCache("getBreaks"); invalidateCache("getMyView");
+    if (r && r.ok) {
+      showToast(t("breaks.slot_updated"), 2000);
+      closeSlotEdit();
+      await loadBreaks_(true);
+    } else {
+      showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+    }
+  } catch (err) {
+    showToast(t("toast.action_failed", { msg: err.message || err }));
+  }
+}
+
+function closeSlotEdit() {
+  const m = document.getElementById("slot-edit-modal");
+  if (m) m.remove();
 }
 
 async function deleteSupervisorSlot(slotId) {
@@ -2328,6 +2486,24 @@ function bindEvents() {
       if (addSup) { addSupervisorSlot(addSup.dataset.superAdd); return; }
       const delSup = e.target.closest("[data-super-del]");
       if (delSup) { deleteSupervisorSlot(delSup.dataset.superDel); return; }
+
+      // REQ-21: 휴게 슬롯 클릭 → 수동 편집 모달
+      const slotEdit = e.target.closest("[data-slot-edit]");
+      if (slotEdit) {
+        const parts = String(slotEdit.dataset.slotEdit).split(":");
+        openSlotEdit(parseInt(parts[0], 10), parts[1]);
+        return;
+      }
+      const slotSave = e.target.closest("[data-slot-save]");
+      if (slotSave) {
+        const parts = String(slotSave.dataset.slotSave).split(":");
+        submitSlotEdit(parseInt(parts[0], 10), parts[1]);
+        return;
+      }
+      if (e.target.id === "slot-edit-cancel" || e.target.id === "slot-edit-modal") {
+        closeSlotEdit();
+        return;
+      }
 
       // 8단계 — Staff Management
       if (e.target.id === "staff-add-toggle") { staffAddOpen = !staffAddOpen; render(); return; }
