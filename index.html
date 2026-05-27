@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -896,11 +895,12 @@ function renderShiftAndAnchor_() {
 }
 
 // REQ-19 (2026-05-26): 휴게 매트릭스 — 와이어프레임대로 TABLE × 시간 슬롯
+// 항상 렌더 (groups 없어도 헤더+빈 셀)
 function renderBreakMatrix_(summary) {
-  if (!summary || !Array.isArray(summary.groups) || !Array.isArray(summary.tables)) return "";
-  const tableList = summary.tables;
-  const groups = summary.groups;
-  const dealerNames = summary.dealerNames || {};
+  const tableList = (summary && Array.isArray(summary.tables) && summary.tables.length)
+    ? summary.tables : ["C11","C12","C13","C14","C15","C16"];
+  const groups = (summary && Array.isArray(summary.groups)) ? summary.groups : [];
+  const dealerNames = (summary && summary.dealerNames) || {};
 
   // table → group (첫 테이블 기준)
   const tableToGroup = {};
@@ -977,13 +977,13 @@ function renderAdminHome_(user) {
       <div class="dash-row"><span class="dash-label">${t("home.dash_shift")}</span><span class="dash-value">${escapeHtml(t("shift." + summary.shift + ".full"))} · ${escapeHtml(t("shift." + summary.shift + ".time"))}</span></div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_tables")}</span><span class="dash-value mono">${escapeHtml(tables)}</span></div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_groups")}</span><span class="dash-value">${groupCnt}</span></div>
+      ${renderBreakMatrix_(summary)}
       <div class="dash-states">
         <span class="ds vac"><span class="dot"></span>VAC ${cs.vacation || 0}</span>
         <span class="ds off"><span class="dot"></span>OFF ${cs.dayoff || 0}</span>
         <span class="ds pre"><span class="dot"></span>PRE ${cs.pre_practice || 0}</span>
         <span class="ds spl"><span class="dot"></span>SPL ${cs.special || 0}</span>
       </div>
-      ${renderBreakMatrix_(summary)}
     </div>`;
   }
   return `
