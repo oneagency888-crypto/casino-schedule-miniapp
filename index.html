@@ -386,8 +386,7 @@ const I18N = {
     "breaks.title":"Breaks","breaks.header":"{shift} · {date}",
     "breaks.dealers_active":"{n} dealers active","breaks.dealer_breaks":"Dealer Breaks (auto)",
     "breaks.attendance_title":"Attendance",
-    "breaks.slot_edit_title":"Edit slot — {table} · {slot}",
-    "breaks.slot_updated":"Slot updated",
+    // §12-D 롤백: REQ-21 슬롯 편집 i18n 키 제거.
     "breaks.attendance_total":"Total dealers",
     "breaks.attendance_people":" people",
     "breaks.attendance_tables_active":"Tables in operation",
@@ -495,8 +494,7 @@ const I18N = {
     "breaks.title":"휴게","breaks.header":"{shift} · {date}",
     "breaks.dealers_active":"출근 딜러 {n}명","breaks.dealer_breaks":"딜러 휴게 (자동)",
     "breaks.attendance_title":"출근 인원",
-    "breaks.slot_edit_title":"슬롯 편집 — {table} · {slot}",
-    "breaks.slot_updated":"슬롯 갱신됨",
+    // §12-D 롤백: REQ-21 슬롯 편집 i18n 키 제거.
     "breaks.attendance_total":"총 인원",
     "breaks.attendance_people":"명",
     "breaks.attendance_tables_active":"운영 테이블",
@@ -988,7 +986,7 @@ function renderLiveCard_() {
     <div class="dash-row"><span class="dash-label">${t("home.dash_shift")}</span><span class="dash-value">${escapeHtml(t("shift." + summary.shift + ".full"))} · ${escapeHtml(t("shift." + summary.shift + ".time"))}</span></div>
     <div class="dash-row"><span class="dash-label">${t("home.dash_tables")}</span><span class="dash-value mono">${escapeHtml(tables)}</span></div>
     <div class="dash-row"><span class="dash-label">${t("home.dash_groups")}</span><span class="dash-value">${groupCnt}</span></div>
-    ${renderBreakMatrix_(summary)}
+    <!-- §12-C 롤백 (2026-05-26): REQ-19 휴게 매트릭스 카드 제거. L3 게이트 누락 자인. renderBreakMatrix_ 함수 정의는 보존 (재사용 가능성). -->
     <div class="dash-states">
       <span class="ds vac"><span class="dot"></span>VAC ${cs.vacation || 0}</span>
       <span class="ds off"><span class="dot"></span>OFF ${cs.dayoff || 0}</span>
@@ -1261,7 +1259,7 @@ async function applyPendingChanges() {
     errMsg = e && e.message ? e.message : String(e);
   }
 
-  invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks"); invalidateCache("getVacationOverview");
+  invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks");
   pendingCellChanges = {};
   applyingPending = false;
 
@@ -1385,9 +1383,8 @@ function renderBreaks_(user) {
         const isEmpty = !empId;
         // REQ-20 (2026-05-26): 시간을 분 단위로 표시 (00", 30" 등) — 매 시간 반복 패턴
         const tm = k + '"';
-        // REQ-21: dataset에 그룹 인덱스 + slotKey 인코딩 (admin 클릭으로 편집)
-        const editAttr = (bootData && bootData.user && bootData.user.isAdmin) ? ` data-slot-edit="${i}:${escapeHtml(k)}"` : "";
-        return `<div class="row${isEmpty ? " empty" : ""}"${editAttr}><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(nameLabel)}</span></div>`;
+        // §12-D 롤백 (2026-05-26): REQ-21 data-slot-edit 속성 제거 (L3 게이트 누락).
+        return `<div class="row${isEmpty ? " empty" : ""}"><span class="time">${escapeHtml(tm)}</span><span class="nm">${escapeHtml(nameLabel)}</span></div>`;
       }).join("");
       return `<div class="break-group ${g.type === "pair" ? "pair" : ""}"><div class="gh"><span class="g-tables">${escapeHtml(tableLabel)}</span> <span class="g-type">${escapeHtml(typeChip)}</span></div><div class="break-slots">${rows}</div></div>`;
     }).join("");
@@ -1481,77 +1478,7 @@ async function addSupervisorSlot(supId) {
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
 }
 
-// REQ-21 (2026-05-26): 모달 클릭 이벤트 위임 (document 레벨 — modal은 body 직속)
-document.addEventListener("click", function(e) {
-  if (e.target.id === "slot-edit-cancel") { closeSlotEdit(); return; }
-  // 백드롭 클릭으로 닫기
-  if (e.target.id === "slot-edit-modal") { closeSlotEdit(); return; }
-  const slotSave = e.target.closest("[data-slot-save]");
-  if (slotSave) {
-    const parts = String(slotSave.dataset.slotSave).split(":");
-    submitSlotEdit(parseInt(parts[0], 10), parts[1]);
-    return;
-  }
-});
-
-async function openSlotEdit(groupIndex, slotKey) {
-  if (!breaksData) return;
-  const g = (breaksData.groups || [])[groupIndex];
-  if (!g) return;
-  const currentEmpId = g.slots[slotKey] || "";
-  // 활성 dealer 후보 (자기 시프트 무관, admin이 결정)
-  const candidates = [];
-  const empInfo = breaksData.employeeInfo || {};
-  Object.keys(empInfo).forEach(function(id) {
-    const v = empInfo[id];
-    const nm = (LANG === "ko" && v.name_ko) ? v.name_ko : (v.name_en || id);
-    candidates.push({ id: id, name: nm });
-  });
-  candidates.sort(function(a, b) { return a.name.localeCompare(b.name); });
-  const optsHtml = candidates.map(function(c) {
-    return `<option value="${escapeHtml(c.id)}" ${c.id === currentEmpId ? "selected" : ""}>${escapeHtml(c.name)}</option>`;
-  }).join("");
-  const tableLabel = (g.tables || []).join(", ") || ("Group " + (groupIndex + 1));
-  const html = `<div class="modal-backdrop" id="slot-edit-modal">
-    <div class="modal-content">
-      <h3>${escapeHtml(t("breaks.slot_edit_title", { table: tableLabel, slot: slotKey + '"' }))}</h3>
-      <label>${t("vacation.select_employee")}</label>
-      <select id="slot-edit-dealer" style="margin-top:6px;">
-        <option value="">— (${escapeHtml(t("breaks.no_slots"))}) —</option>
-        ${optsHtml}
-      </select>
-      <div class="actions" style="margin-top:12px; display:flex; gap:8px;">
-        <button class="btn" id="slot-edit-save" data-slot-save="${groupIndex}:${escapeHtml(slotKey)}">${t("staff.save")}</button>
-        <button class="btn ghost" id="slot-edit-cancel">${t("staff.cancel")}</button>
-      </div>
-    </div>
-  </div>`;
-  document.body.insertAdjacentHTML("beforeend", html);
-}
-
-async function submitSlotEdit(groupIndex, slotKey) {
-  const sel = document.getElementById("slot-edit-dealer");
-  if (!sel) return;
-  const newEmpId = sel.value;
-  try {
-    const r = await apiPost("setBreakSlot", { date: breaksDate, shift: breaksShift, groupIndex: groupIndex, slotKey: slotKey, employeeId: newEmpId });
-    invalidateCache("getBreaks"); invalidateCache("getMyView");
-    if (r && r.ok) {
-      showToast(t("breaks.slot_updated"), 2000);
-      closeSlotEdit();
-      await loadBreaks_(true);
-    } else {
-      showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
-    }
-  } catch (err) {
-    showToast(t("toast.action_failed", { msg: err.message || err }));
-  }
-}
-
-function closeSlotEdit() {
-  const m = document.getElementById("slot-edit-modal");
-  if (m) m.remove();
-}
+// §12-D 롤백 (2026-05-26): REQ-21 슬롯 수동 편집 모달 + document click 위임 + openSlotEdit/submitSlotEdit/closeSlotEdit 제거.
 
 async function deleteSupervisorSlot(slotId) {
   try {
@@ -1665,11 +1592,14 @@ function renderMy_(user) {
   const summaryStr = totalCells > 0
     ? escapeHtml(t("my.cell_summary", { n: totalCells, vac: counts.vac, off: counts.off, pre: counts.pre, spl: counts.spl }))
     : escapeHtml(t("my.no_cells"));
+  // §12-A 롤백 (2026-05-26): V4 깨짐 수정 — REQ-23의 renderLiveCard_() 호출 제거.
+  // viewer 첫 카드는 다시 헤더, 그 다음 todayCard(Today's Breaks)가 두 번째 카드.
+  // (LIVE 카드는 admin 홈에만 유지)
   const headerCard = `<div class="card ruby-card">
     <h2>${escapeHtml(name)}</h2>
     <p class="hint">${escapeHtml(categoryLabel_(user.category))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("shift." + user.defaultShift + ".time"))}${subExtraStr}</p>
     <p class="hint" style="margin-top:6px; font-size:11px; opacity:0.85;">⟳ ${escapeHtml(t("my.last_updated", { time: fetchedStr }))} · ${summaryStr}</p>
-  </div>` + renderLiveCard_();  // REQ-23: 슈퍼바이저(viewer)에게도 LIVE 카드 노출
+  </div>`;
 
   // Today's Breaks
   let todayCard = "";
@@ -1998,75 +1928,50 @@ async function restoreStaff(id) {
 // REQ-5b (2026-05-26): Vacation Range 전용 화면
 // 직원 선택 + 기간 + Apply (단축 경로 — Find Dealer 거치지 않음)
 // ────────────────────────────────────────────────────────────
+// §12-B 롤백 (2026-05-26): REDESIGN-1 4주 오버뷰 → REQ-5b 단순 폼 복원.
+// L3 게이트 누락 자인. server `getVacationOverview` 엔드포인트 정의는 보존 (재사용 가능).
 async function openVacationRange() {
   currentScreen = SCREEN_VACATION;
   vacationLoading = true;
-  vacationAnchor = vacationAnchor || mondayOfThisWeek();
   vacationFrom = todayIso();
   vacationTo = fmtDate(addDays(new Date(), 4));
+  vacationEmpId = "";
   render();
-  await loadVacationOverview_();
-}
-
-async function loadVacationOverview_(forceFresh) {
-  vacationLoading = true; render();
   try {
-    const r = await apiGetCached("getVacationOverview", { anchor: vacationAnchor }, { forceFresh: !!forceFresh });
-    if (r && r.ok && r.data) vacationOverview = r.data;
-    else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
-  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
-  vacationLoading = false; render();
+    const r = await apiGetCached("searchStaff", { q: "", shift: "all", category: "all", active: "true", limit: 500, offset: 0 });
+    if (r && r.ok && r.data) vacationCandidates = r.data.items || [];
+    else vacationCandidates = [];
+  } catch (err) {
+    vacationCandidates = [];
+    showToast(t("toast.action_failed", { msg: err.message || err }));
+  }
+  vacationLoading = false;
+  render();
 }
 
-async function moveVacationAnchor(days) {
-  if (days === 0) vacationAnchor = mondayOfThisWeek();
-  else vacationAnchor = fmtDate(addDays(parseDate(vacationAnchor), days));
-  await loadVacationOverview_(true);
-}
-
-// REDESIGN-1: 휴가 범위 4주 오버뷰 화면 (Ruby Velvet 디자인)
 function renderVacation_(user) {
   if (!user || !user.isAdmin) return `<div class="card"><p class="hint">${t("error.forbidden")}</p></div>`;
-  if (vacationLoading && !vacationOverview) return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
-  if (!vacationOverview) return `<div class="card"><p class="hint">${t("search.no_results")}</p></div>`;
+  if (vacationLoading && vacationCandidates.length === 0) {
+    return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
+  }
+  const opts = vacationCandidates.slice().sort(function(a, b) {
+    const an = (LANG === "ko" && a.name_ko) ? a.name_ko : (a.name_en || "");
+    const bn = (LANG === "ko" && b.name_ko) ? b.name_ko : (b.name_en || "");
+    return an.localeCompare(bn);
+  });
+  const optsHtml = opts.map(function(e) {
+    const nm = (LANG === "ko" && e.name_ko) ? e.name_ko : (e.name_en || e.id);
+    const extras = [categoryIcon_(e.category) + " " + categoryLabel_(e.category)];
+    if (e.nationality) extras.push(nationalityLabel_(e.nationality));
+    return `<option value="${escapeHtml(e.id)}" ${e.id === vacationEmpId ? "selected" : ""}>${escapeHtml(nm + " (" + extras.join(" · ") + ")")}</option>`;
+  }).join("");
 
-  const anchorIso = vacationOverview.anchor;
-  const totals = vacationOverview.totals || {};
-
-  // 헤더 카드 — anchor 네비 + 총계 + 범례
-  const headerCard = `<div class="card vac-card vac-header">
-    <h2>📅 ${t("home.vacation_range")}</h2>
-    <div class="anchor-nav" style="margin-top:6px;">
-      <button class="ghost" data-vac-anchor-delta="-28">${t("common.prev_4w")}</button>
-      <span class="range">${escapeHtml(rangeLabel(anchorIso))}</span>
-      <button class="ghost" data-vac-anchor-delta="0">${t("common.today")}</button>
-      <button class="ghost" data-vac-anchor-delta="28">${t("common.next_4w")}</button>
+  return `
+    <div class="card">
+      <h2>📅 ${t("home.vacation_range")}</h2>
+      <p class="hint">${t("vacation.intro")}</p>
     </div>
-    <div class="vac-totals" style="margin-top:8px;">
-      <span class="vac-total vac"><span class="dot"></span>VAC ${totals.vacation || 0}</span>
-      <span class="vac-total off"><span class="dot"></span>OFF ${totals.dayoff || 0}</span>
-      <span class="vac-total pre"><span class="dot"></span>PRE ${totals.pre_practice || 0}</span>
-      <span class="vac-total spl"><span class="dot"></span>SPL ${totals.special || 0}</span>
-    </div>
-    <button class="btn ghost small" id="vac-quick-toggle" style="margin-top:10px;">${vacationQuickFormOpen ? t("staff.cancel") : "✚ " + t("vacation.quick_apply")}</button>
-  </div>`;
-
-  // 빠른 입력 폼 (옵션, 토글)
-  let quickForm = "";
-  if (vacationQuickFormOpen) {
-    const opts = (vacationOverview.employees || []).slice().sort(function(a, b) {
-      const an = (LANG === "ko" && a.name_ko) ? a.name_ko : (a.name_en || "");
-      const bn = (LANG === "ko" && b.name_ko) ? b.name_ko : (b.name_en || "");
-      return an.localeCompare(bn);
-    });
-    const optsHtml = opts.map(function(e) {
-      const nm = (LANG === "ko" && e.name_ko) ? e.name_ko : (e.name_en || e.id);
-      const extras = [categoryIcon_(e.category) + " " + categoryLabel_(e.category)];
-      if (e.nationality) extras.push(nationalityLabel_(e.nationality));
-      return `<option value="${escapeHtml(e.id)}" ${e.id === vacationEmpId ? "selected" : ""}>${escapeHtml(nm + " (" + extras.join(" · ") + ")")}</option>`;
-    }).join("");
-    quickForm = `<div class="card vac-card">
-      <h2 style="margin-top:0;">${t("vacation.quick_apply")}</h2>
+    <div class="card">
       <label>${t("vacation.select_employee")}</label>
       <select id="vac-emp-select" style="margin-top:6px;">
         <option value="">${t("vacation.placeholder_select")}</option>
@@ -2078,86 +1983,8 @@ function renderVacation_(user) {
       </div>
       <button class="btn" id="vac-range-apply" style="margin-top:10px; width:100%;">${t("calendar.apply_vacation")}</button>
       <p class="hint" style="margin-top:8px; font-size:11px;">${t("vacation.note_pinned")}</p>
-    </div>`;
-  }
-
-  // 직원별 4주 미니 캘린더 카드 — Ruby Velvet 스타일
-  const dowKeys = ["calendar.mon","calendar.tue","calendar.wed","calendar.thu","calendar.fri","calendar.sat","calendar.sun"];
-  const dowHeader = dowKeys.map((k, i) => `<div class="vac-dow ${i===5?"sat":i===6?"sun":""}">${t(k)}</div>`).join("");
-  const today = todayIso();
-
-  const employees = vacationOverview.employees || [];
-  const empCards = employees.map(function(e) {
-    const nm = (LANG === "ko" && e.name_ko) ? e.name_ko : (e.name_en || e.id);
-    const days = e.days || {};
-    // 28일 셀 + 연속 VAC 줄 표시 (start/middle/end 클래스)
-    const cellsArr = [];
-    for (let i = 0; i < 28; i++) {
-      const iso = fmtDate(addDays(parseDate(anchorIso), i));
-      const st = days[iso] || "work";
-      const prevSt = i > 0 ? (days[fmtDate(addDays(parseDate(anchorIso), i - 1))] || "work") : null;
-      const nextSt = i < 27 ? (days[fmtDate(addDays(parseDate(anchorIso), i + 1))] || "work") : null;
-      const sameAsPrev = (st === prevSt && st !== "work");
-      const sameAsNext = (st === nextSt && st !== "work");
-      cellsArr.push({ iso, day: parseDate(iso).getDate(), state: st, sameAsPrev, sameAsNext, isToday: iso === today });
-    }
-    const cellsHtml = cellsArr.map(function(c) {
-      const cls = ["vac-cell"];
-      if (c.state === "vacation") cls.push("vac");
-      else if (c.state === "dayoff") cls.push("off");
-      else if (c.state === "pre_practice") cls.push("pre");
-      else if (c.state === "special") cls.push("spl");
-      if (c.isToday) cls.push("today");
-      if (c.sameAsPrev) cls.push("streak-prev");
-      if (c.sameAsNext) cls.push("streak-next");
-      const lbl = c.state === "vacation" ? "VAC" : c.state === "dayoff" ? "OFF" : c.state === "pre_practice" ? "PRE" : c.state === "special" ? "SPL" : "";
-      return `<div class="${cls.join(" ")}" data-vac-cell="${c.iso}|${e.id}"><span class="d">${c.day}</span>${lbl ? `<span class="lbl">${lbl}</span>` : ""}</div>`;
-    }).join("");
-    // 카운트 (이 직원의 28일 합계)
-    let cVac = 0, cOff = 0, cPre = 0, cSpl = 0;
-    Object.values(days).forEach(function(s) {
-      if (s === "vacation") cVac++; else if (s === "dayoff") cOff++;
-      else if (s === "pre_practice") cPre++; else if (s === "special") cSpl++;
-    });
-    const extras = [];
-    extras.push(categoryIcon_(e.category) + " " + categoryLabel_(e.category));
-    if (e.nationality) extras.push(nationalityLabel_(e.nationality));
-
-    return `<div class="card ruby-card vac-emp-card">
-      <div class="vac-emp-head">
-        <div class="vac-emp-name">${escapeHtml(nm)}</div>
-        <div class="vac-emp-meta">${extras.map(escapeHtml).join(" · ")}</div>
-      </div>
-      <div class="vac-emp-counts">
-        <span class="vac-count vac">VAC ${cVac}</span>
-        <span class="vac-count off">OFF ${cOff}</span>
-        <span class="vac-count pre">PRE ${cPre}</span>
-        <span class="vac-count spl">SPL ${cSpl}</span>
-      </div>
-      <div class="vac-grid">${dowHeader}${cellsHtml}</div>
-    </div>`;
-  }).join("");
-
-  // REQ-16: 4주 시프트별 출근 요약 카드 (하단)
-  const dailyAtt = vacationOverview.dailyShiftAttendance || {};
-  const attCellsHtml = [];
-  for (let i = 0; i < 28; i++) {
-    const iso = fmtDate(addDays(parseDate(anchorIso), i));
-    const c = dailyAtt[iso] || { M: { dealer: 0, supervisor: 0 }, A: { dealer: 0, supervisor: 0 }, N: { dealer: 0, supervisor: 0 } };
-    attCellsHtml.push(`<div class="vac-att-cell">
-      <div class="day">${parseDate(iso).getDate()}</div>
-      <div class="row"><span class="lbl">M</span><span class="v">${c.M.dealer}/${c.M.supervisor}</span></div>
-      <div class="row"><span class="lbl">A</span><span class="v">${c.A.dealer}/${c.A.supervisor}</span></div>
-      <div class="row"><span class="lbl">N</span><span class="v">${c.N.dealer}/${c.N.supervisor}</span></div>
-    </div>`);
-  }
-  const attendanceCard = `<div class="card ruby-card">
-    <h2>${t("vacation.attendance_4w")}</h2>
-    <p class="hint" style="margin-bottom:8px;">${t("vacation.attendance_hint")}</p>
-    <div class="vac-grid">${dowHeader}${attCellsHtml.join("")}</div>
-  </div>`;
-
-  return headerCard + quickForm + empCards + attendanceCard;
+    </div>
+  `;
 }
 
 async function submitVacationRange() {
@@ -2172,15 +1999,14 @@ async function submitVacationRange() {
   if (from > to) { showToast(t("toast.from_after_to"), 2500); return; }
   try {
     const r = await apiPost("applyVacationRange", { employeeId: empId, startDate: from, endDate: to });
-    invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks"); invalidateCache("getVacationOverview");
+    invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks");
     if (r && r.ok && r.data) {
       const aff = (r.data.affectedDates || []).length;
       const skip = (r.data.skippedDates || []).length;
       let msg = t("toast.vacation_applied", { n: aff });
       if (skip > 0) msg += " · " + t("toast.vacation_pinned_skipped", { n: skip });
       showToast(msg, 3500);
-      // REDESIGN-1: 적용 후 오버뷰 갱신
-      if (currentScreen === SCREEN_VACATION) await loadVacationOverview_(true);
+      // §12-B 롤백: REDESIGN-1 4주 오버뷰 자동 새로고침 제거.
     } else {
       showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
     }
@@ -2387,7 +2213,7 @@ document.addEventListener("visibilitychange", function() {
   else if (currentScreen === SCREEN_CALENDAR && selectedStaff) {
     invalidateCache("getStaffDetail");
     openCalendar(selectedStaff.id, selectedStaff.name);
-  } else if (currentScreen === SCREEN_VACATION) loadVacationOverview_(true);
+  // §12-B 롤백: SCREEN_VACATION visibilitychange 자동 새로고침 제거 (REQ-5b는 dropdown만이라 stale 의미 약함).
 });
 
 // REFRESH-1 (2026-05-26): 컨텍스트 인식 새로고침 — 현재 화면에 맞는 fresh fetch.
@@ -2412,8 +2238,8 @@ async function manualRefresh() {
       invalidateCache("listShiftCycles");
       await loadCycles_();
     } else if (currentScreen === SCREEN_VACATION) {
-      invalidateCache("getVacationOverview");
-      await loadVacationOverview_(true);
+      // §12-B 롤백: REDESIGN-1 loadVacationOverview_ 제거. 화면 다시 진입으로 단순화.
+      await openVacationRange();
     } else if (currentScreen === SCREEN_HOME) {
       // 홈에선 ping 결과 갱신 — 별도 처리 불필요. 토스트만.
     }
@@ -2501,23 +2327,7 @@ function bindEvents() {
       const delSup = e.target.closest("[data-super-del]");
       if (delSup) { deleteSupervisorSlot(delSup.dataset.superDel); return; }
 
-      // REQ-21: 휴게 슬롯 클릭 → 수동 편집 모달
-      const slotEdit = e.target.closest("[data-slot-edit]");
-      if (slotEdit) {
-        const parts = String(slotEdit.dataset.slotEdit).split(":");
-        openSlotEdit(parseInt(parts[0], 10), parts[1]);
-        return;
-      }
-      const slotSave = e.target.closest("[data-slot-save]");
-      if (slotSave) {
-        const parts = String(slotSave.dataset.slotSave).split(":");
-        submitSlotEdit(parseInt(parts[0], 10), parts[1]);
-        return;
-      }
-      if (e.target.id === "slot-edit-cancel" || e.target.id === "slot-edit-modal") {
-        closeSlotEdit();
-        return;
-      }
+      // §12-D 롤백 (2026-05-26): REQ-21 슬롯 편집 click 위임 제거.
 
       // 8단계 — Staff Management
       if (e.target.id === "staff-add-toggle") { staffAddOpen = !staffAddOpen; render(); return; }
@@ -2538,11 +2348,8 @@ function bindEvents() {
       const cycleEndBtn = e.target.closest("[data-cycle-end]");
       if (cycleEndBtn) { endCycle(cycleEndBtn.dataset.cycleEnd, cycleEndBtn.dataset.cycleName); return; }
 
-      // REQ-5b / REDESIGN-1 — Vacation Range 화면
+      // REQ-5b — Vacation Range 화면 (§12-B 롤백 후 단순 폼만 남음)
       if (e.target.id === "vac-range-apply") { submitVacationRange(); return; }
-      if (e.target.id === "vac-quick-toggle") { vacationQuickFormOpen = !vacationQuickFormOpen; render(); return; }
-      const vacAnchorBtn = e.target.closest("[data-vac-anchor-delta]");
-      if (vacAnchorBtn) { moveVacationAnchor(parseInt(vacAnchorBtn.dataset.vacAnchorDelta, 10)); return; }
     });
     mainEl.dataset.bound = "1";
   }
