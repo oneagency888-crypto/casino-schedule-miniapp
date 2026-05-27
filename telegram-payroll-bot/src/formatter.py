@@ -47,7 +47,7 @@ def format_payroll_message(employee, period):
         lines.append(f"  {label}  {_fmt(amount)}")
 
     lines.append("─────────────────────")
-    lines.append(f"  실수령액 (USDT)  ${e['usdt_total']:,.2f}")
+    lines.append(f"  실수령액  ${e['usdt_total']:,.2f}")
 
     if e["allowance"]:
         lines.append(f"  수당 (₱)  ₱{e['allowance']:,.0f}")
