@@ -307,7 +307,7 @@ const I18N = {
     "home.breaks_today":"Breaks today","home.shift_cycle":"Shift Cycle",
     "home.add_staff":"Add Staff","home.backup":"Backup",
     "home.shift_view":"Shift view","home.my_view":"My View",
-    "home.dash_attendance":"Attendance","home.dash_shift":"Shift",
+    "home.dash_attendance":"Dealer attendance","home.dash_attendance_sup":"Supervisor attendance","home.dash_shift":"Shift",
     "home.dash_tables":"Active tables","home.dash_groups":"Break groups",
     "my.title":"My View","my.todays_breaks":"Today's Breaks","my.no_breaks_today":"No break assignment today (off/vacation).",
     "my.contact_admin_for_off":"Need a day off? Contact admin.",
@@ -414,7 +414,7 @@ const I18N = {
     "home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 사이클",
     "home.add_staff":"인원 추가","home.backup":"백업",
     "home.shift_view":"시프트 보기","home.my_view":"내 휴게 보기",
-    "home.dash_attendance":"출근","home.dash_shift":"시프트",
+    "home.dash_attendance":"딜러 출근","home.dash_attendance_sup":"슈퍼바이저 출근","home.dash_shift":"시프트",
     "home.dash_tables":"운영 테이블","home.dash_groups":"휴게 묶음",
     "my.title":"내 휴게","my.todays_breaks":"오늘 내 휴게","my.no_breaks_today":"오늘 휴게 배정 없음 (휴무/휴가).",
     "my.contact_admin_for_off":"휴무가 필요하면 관리자에게 문의하세요.",
@@ -892,6 +892,7 @@ function renderAdminHome_(user) {
         <span class="dash-time" id="dash-time">${escapeHtml(summary.date + " " + liveTime)}</span>
       </div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_attendance")}</span><span class="dash-value">${attended} / ${total}</span></div>
+      <div class="dash-row"><span class="dash-label">${t("home.dash_attendance_sup")}</span><span class="dash-value">${summary.supervisorAttendance || 0} / ${summary.totalSupervisors || 0}</span></div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_shift")}</span><span class="dash-value">${escapeHtml(t("shift." + summary.shift + ".full"))} · ${escapeHtml(t("shift." + summary.shift + ".time"))}</span></div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_tables")}</span><span class="dash-value mono">${escapeHtml(tables)}</span></div>
       <div class="dash-row"><span class="dash-label">${t("home.dash_groups")}</span><span class="dash-value">${groupCnt}</span></div>
