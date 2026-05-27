@@ -1,8 +1,3 @@
-SHIFT_NAMES = {
-    "HT": "Afternoon",
-}
-
-
 def _fmt(amount):
     if amount < 0:
         return f"-{abs(amount):,.2f}"
@@ -14,11 +9,16 @@ def format_payroll_message(employee, period):
 
     lines = [f"\U0001f4b0 급여 명세 ({period})", ""]
 
+    if e["nick_name"]:
+        lines.append(f"{e['name']} ({e['nick_name']}) 님")
+    else:
+        lines.append(f"{e['name']} 님")
+
     info_parts = []
     if e["unit"]:
         info_parts.append(f"숙소 {e['unit']}")
     if e["shift"]:
-        info_parts.append(SHIFT_NAMES.get(e["shift"], e["shift"]))
+        info_parts.append(e["shift"])
     if e["total_hours"] > 0:
         info_parts.append(f"총 {e['total_hours']:g}시간")
     if info_parts:
