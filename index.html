@@ -139,6 +139,19 @@
   .dashboard-card .ds.off .dot { background: var(--off); }
   .dashboard-card .ds.pre .dot { background: var(--pre); }
   .dashboard-card .ds.spl .dot { background: var(--spl); }
+  /* Item 3: viewer/supervisor 화면용 velvet 변형 — ruby-card 톤에 맞춤 (admin은 기존 teal 유지) */
+  .dashboard-card.dashboard-velvet { background: linear-gradient(135deg, #2a0a14 0%, #3d0d1c 50%, #1a0610 100%); border-color: #4a1422; color: #f4e9d4; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  .dashboard-card.dashboard-velvet .dash-head { border-bottom-color: rgba(244,233,212,0.12); }
+  .dashboard-card.dashboard-velvet .dash-time { color: #f4e9d4; }
+  .dashboard-card.dashboard-velvet .dash-label { color: #c5a89a; }
+  .dashboard-card.dashboard-velvet .dash-value { color: #f4e9d4; }
+  .dashboard-card.dashboard-velvet .dash-states { border-top-color: rgba(244,233,212,0.12); }
+  .dashboard-card.dashboard-velvet .bm-wrap { border-top-color: rgba(244,233,212,0.12); }
+  .dashboard-card.dashboard-velvet .break-matrix { color: #f4e9d4; }
+  .dashboard-card.dashboard-velvet .break-matrix th { color: #c5a89a; }
+  .dashboard-card.dashboard-velvet .break-matrix .bm-th-label { color: #f4e9d4; }
+  .dashboard-card.dashboard-velvet .break-matrix .bm-td-label { color: #c5a89a; }
+  .dashboard-card.dashboard-velvet .break-matrix .bm-td { color: #f4e9d4; }
   /* REQ-19: 휴게 매트릭스 */
   .bm-wrap { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); overflow-x: auto; }
   .break-matrix { width: 100%; border-collapse: separate; border-spacing: 3px; font-size: 11px; color: #f5f9fc; }
@@ -319,7 +332,7 @@ const I18N = {
     "common.back":"Back","common.today":"Today","common.prev_4w":"◀ Prev 4w","common.next_4w":"Next 4w ▶",
     "common.save":"Save","common.cancel":"Cancel","common.apply":"Apply","common.delete":"Delete",
     "common.active":"Active","common.inactive":"Inactive",
-    "category.dealer":"Dealer","category.supervisor":"Supervisor","category.trainee":"Trainee",
+    "category.dealer":"Dealer","category.supervisor":"Supervisor","category.trainee":"Trainee","category.administrator":"Administrator",
     "nationality.KR":"Korea","nationality.TH":"Thailand","nationality.PH":"Philippines","nationality.OTHER":"Other",
     "home.title":"Home","home.quick_actions":"Quick Actions",
     "home.find_dealer":"Find Dealer","home.vacation_range":"Vacation Range",
@@ -433,7 +446,7 @@ const I18N = {
     "common.back":"뒤로","common.today":"오늘","common.prev_4w":"◀ 이전 4주","common.next_4w":"다음 4주 ▶",
     "common.save":"저장","common.cancel":"취소","common.apply":"적용","common.delete":"삭제",
     "common.active":"재직","common.inactive":"비활성",
-    "category.dealer":"딜러","category.supervisor":"슈퍼바이저","category.trainee":"트레이니",
+    "category.dealer":"딜러","category.supervisor":"슈퍼바이저","category.trainee":"트레이니","category.administrator":"관리자",
     "nationality.KR":"한국","nationality.TH":"태국","nationality.PH":"필리핀","nationality.OTHER":"그외",
     "home.title":"홈","home.quick_actions":"빠른 작업",
     "home.find_dealer":"딜러 찾기","home.vacation_range":"휴가 범위",
@@ -563,6 +576,7 @@ function categoryIcon_(category) {
   if (category === "dealer") return "🃏";
   if (category === "supervisor") return "🎯";
   if (category === "trainee") return "📘";
+  if (category === "administrator") return "👑";
   return "👤";
 }
 function nationalityLabel_(code) { if (!code) return ""; return t("nationality." + code); }
@@ -757,6 +771,7 @@ const PLACEHOLDER_SCREENS = {
 let vacationOverview = null;     // 서버 응답 (anchor / endDate / employees / dailyCounts / totals)
 let vacationAnchor = null;       // 현재 보고있는 4주 시작
 let vacationLoading = false;
+let vacationCandidates = [];     // REQ-5b 전용 화면 후보 직원 목록 (미선언 시 strict ReferenceError → 휴가범위 화면 깨짐)
 // (legacy v1 — REQ-5b 전용 화면 변수도 일부 보존, 빠른 폼 모드 진입 시)
 let vacationEmpId = "";
 let vacationFrom = "";
@@ -968,11 +983,12 @@ function renderBreakMatrix_(summary) {
 // REQ-23/REQ-24 (2026-05-26): LIVE 카드 — admin/supervisor/dealer/trainee 공용
 // admin & supervisor → 슈퍼바이저 출근 + 트레이니 출근 라인 표시
 // dealer & trainee → 본인 카테고리(딜러 출근)만, 슈퍼/트레이니 라인 숨김
-function renderLiveCard_() {
+function renderLiveCard_(velvet) {
   const summary = (bootData && bootData.todaySummary) || null;
   if (!summary) return "";
   const user = (bootData && bootData.user) || {};
   const showManagerRows = user.isAdmin || user.category === "supervisor";
+  const cardClass = "card dashboard-card" + (velvet ? " dashboard-velvet" : "");
 
   const liveTime = (function() {
     const d = new Date();
@@ -991,7 +1007,7 @@ function renderLiveCard_() {
     ? `<div class="dash-row"><span class="dash-label">${t("home.dash_attendance_trn")}</span><span class="dash-value">${summary.traineeAttendance || 0} / ${summary.totalTrainees || 0}</span></div>`
     : "";
 
-  return `<div class="card dashboard-card">
+  return `<div class="${cardClass}">
     <div class="dash-head">
       <span class="dash-live">🔴 ${escapeHtml(t("home.live_title"))}</span>
       <span class="dash-time" id="dash-time">${escapeHtml(summary.date + " " + liveTime)}</span>
@@ -1002,7 +1018,10 @@ function renderLiveCard_() {
     <div class="dash-row"><span class="dash-label">${t("home.dash_shift")}</span><span class="dash-value">${escapeHtml(t("shift." + summary.shift + ".full"))} · ${escapeHtml(t("shift." + summary.shift + ".time"))}</span></div>
     <div class="dash-row"><span class="dash-label">${t("home.dash_tables")}</span><span class="dash-value mono">${escapeHtml(tables)}</span></div>
     <div class="dash-row"><span class="dash-label">${t("home.dash_groups")}</span><span class="dash-value">${groupCnt}</span></div>
-    <!-- §12-C 롤백 (2026-05-26): REQ-19 휴게 매트릭스 카드 제거. L3 게이트 누락 자인. renderBreakMatrix_ 함수 정의는 보존 (재사용 가능성). -->
+    <!-- 2026-05-28 사용자 요청 + 기획 §10.12.1 A LIVE 매트릭스 "선택 기능": renderBreakMatrix_ 재활성화.
+         renderLiveCard_ 호출처가 admin(renderAdminHome_) + supervisor(renderMy_ 분기)뿐이라 그 둘만 노출.
+         dealer/trainee는 LIVE 카드 자체가 없어 자동 미노출 (§10.12.1 A 대상 역할과 일치). -->
+    ${renderBreakMatrix_(summary)}
     <div class="dash-states">
       <span class="ds vac"><span class="dot"></span>VAC ${cs.vacation || 0}</span>
       <span class="ds off"><span class="dot"></span>OFF ${cs.dayoff || 0}</span>
@@ -1019,7 +1038,7 @@ function renderAdminHome_(user) {
   // T1 미발동 (Quick Actions 첫 자리 유지). W1 4탭 기준 유지.
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
-      <p class="hint">${escapeHtml(categoryLabel_(user.category))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))} · ${escapeHtml(t("boot.role_admin"))}</p>
+      <p class="hint">${escapeHtml(t("category.administrator"))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))}</p>
     </div>
     <div class="card"><h2>${t("home.quick_actions")}</h2>
       <div class="btn-row">
@@ -1725,7 +1744,7 @@ function renderMy_(user) {
   if (user.category === "supervisor") {
     const supEditNotice = `<div class="card ruby-card"><p class="hint">📌 ${escapeHtml(t("super.no_edit_notice"))}</p></div>`;
     const supContactCard = `<div class="card ruby-card"><p class="hint">${escapeHtml(t("super.contact_admin_for_break"))}</p></div>`;
-    return headerCard + todayCard + supEditNotice + renderLiveCard_() + calendarCard + supContactCard;
+    return headerCard + todayCard + supEditNotice + renderLiveCard_(true) + calendarCard + supContactCard;
   }
 
   return headerCard + todayCard + calendarCard + contactCard;
@@ -1803,6 +1822,7 @@ function renderStaff_(user) {
         <option value="dealer">${t("category.dealer")}</option>
         <option value="supervisor">${t("category.supervisor")}</option>
         <option value="trainee">${t("category.trainee")}</option>
+        <option value="administrator">${t("category.administrator")}</option>
       </select></div>
       <div><label>${t("staff.field_shift")}</label><select id="new-shift"><option value="M">${t("shift.M.full")}</option><option value="A" selected>${t("shift.A.full")}</option><option value="N">${t("shift.N.full")}</option></select></div>
     </div>
@@ -1859,6 +1879,7 @@ function renderStaffEditForm_(s) {
             <option value="dealer" ${s.category === "dealer" ? "selected" : ""}>${t("category.dealer")}</option>
             <option value="supervisor" ${s.category === "supervisor" ? "selected" : ""}>${t("category.supervisor")}</option>
             <option value="trainee" ${s.category === "trainee" ? "selected" : ""}>${t("category.trainee")}</option>
+            <option value="administrator" ${s.category === "administrator" ? "selected" : ""}>${t("category.administrator")}</option>
           </select>
         </div>
         <div><label>${t("staff.field_shift")}</label>
