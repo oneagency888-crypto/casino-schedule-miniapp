@@ -1026,13 +1026,13 @@ function renderLiveCard_(velvet) {
 
 function renderAdminHome_(user) {
   const name = (LANG === "ko" && user.name_ko) ? user.name_ko : (user.name_en || user.id);
-  // §14 (2026-05-27): §8.32 옵션 A 확정 — LIVE 카드 Quick Actions 아래로 이동.
-  // 기획자 §10.12.8 A 와이어프레임 v3: 헤더 → Quick Actions → LIVE → (Warnings 위치).
-  // T1 미발동 (Quick Actions 첫 자리 유지). W1 4탭 기준 유지.
+  // 2026-05-28 사용자 결정: §8.32(LIVE를 Quick Actions 아래로) 되돌림 — LIVE 카드(매트릭스 포함)를 Quick Actions 위로.
+  //   순서: 환영 → LIVE(통계+매트릭스) → Quick Actions. (사용자 직접 승인 = 게이트. Quick Actions가 LIVE 아래로 내려감)
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
       <p class="hint">${escapeHtml(t("category.administrator"))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))}</p>
     </div>
+    ${renderLiveCard_()}
     <div class="card"><h2>${t("home.quick_actions")}</h2>
       <div class="btn-row">
         <button class="btn" data-nav="${SCREEN_FIND_DEALER}"><span class="emo">👤</span>${t("home.find_dealer")}</button>
@@ -1041,8 +1041,7 @@ function renderAdminHome_(user) {
         <button class="btn" data-nav="shift_cycle"><span class="emo">🔄</span>${t("home.shift_cycle")}</button>
         <button class="btn" data-nav="${SCREEN_STAFF}"><span class="emo">➕</span>${t("home.add_staff")}</button>
         <button class="btn" data-nav="backup"><span class="emo">📤</span>${t("home.backup")}</button>
-      </div></div>
-    ${renderLiveCard_()}`;
+      </div></div>`;
 }
 
 function renderViewerHome_(user) {
