@@ -923,19 +923,15 @@ function renderShiftAndAnchor_() {
       </div></div>`;
 }
 
-// REQ-19 (2026-05-26): 휴게 매트릭스 — 와이어프레임대로 TABLE × 시간 슬롯
-// 항상 렌더 (groups 없어도 헤더+빈 셀)
+// 휴게 매트릭스 — 그룹 단위 열 (2026-05-28 사용자 피드백 반영):
+//   triple = 2테이블 묶음 1열 (헤더 "C11/C12") + 휴게 로테이션 00"/20"/40"
+//   pair   = 1테이블 1열 (헤더 "C11") + 휴게 교대 00"/30"
+//   운영 중인 그룹만 열로 노출 (빈 테이블 C13~ 숨김 — 인원 늘면 그룹 늘어 자동 등장).
+//   존재하는 그룹 타입의 슬롯 행만 표시. groups 없으면 미표시. admin/supervisor 공용.
 function renderBreakMatrix_(summary) {
-  const tableList = (summary && Array.isArray(summary.tables) && summary.tables.length)
-    ? summary.tables : ["C11","C12","C13","C14","C15","C16"];
   const groups = (summary && Array.isArray(summary.groups)) ? summary.groups : [];
+  if (!groups.length) return "";
   const dealerNames = (summary && summary.dealerNames) || {};
-
-  // table → group (첫 테이블 기준)
-  const tableToGroup = {};
-  groups.forEach(function(g) {
-    if (g.tables && g.tables.length > 0) tableToGroup[g.tables[0]] = g;
-  });
 
   const dealerName = function(empId) {
     if (!empId) return "";
@@ -943,38 +939,35 @@ function renderBreakMatrix_(summary) {
     if (!v) return empId;
     return (LANG === "ko" && v.ko) ? v.ko : (v.en || empId);
   };
+  const groupLabel = function(g, idx) {
+    return (g.tables && g.tables.length) ? g.tables.join("/") : ("G" + (idx + 1));
+  };
 
+  const hasTriple = groups.some(function(g) { return g.type === "triple"; });
+  const hasPair = groups.some(function(g) { return g.type === "pair"; });
   const tripleSlots = ["00", "20", "40"];
   const pairSlots = ["00", "30"];
 
-  // 헤더
+  // 헤더 — 그룹별 1열
   let html = '<div class="bm-wrap"><table class="break-matrix"><thead><tr>';
   html += '<th class="bm-th-label">TABLE</th>';
-  tableList.forEach(function(t) { html += '<th>' + escapeHtml(t) + '</th>'; });
+  groups.forEach(function(g, idx) { html += '<th>' + escapeHtml(groupLabel(g, idx)) + '</th>'; });
   html += '</tr></thead><tbody>';
 
-  // Triple 슬롯 행
-  tripleSlots.forEach(function(slot) {
-    html += '<tr><td class="bm-td-label">' + slot + '"</td>';
-    tableList.forEach(function(t) {
-      const g = tableToGroup[t];
-      const isTriple = g && g.type === "triple";
-      const empId = isTriple && g.slots ? (g.slots[slot] || "") : "";
-      html += '<td class="' + (isTriple ? "bm-td triple" : "bm-td") + '">' + escapeHtml(dealerName(empId)) + '</td>';
+  const renderRows = function(slots, type) {
+    slots.forEach(function(slot) {
+      html += '<tr><td class="bm-td-label">' + slot + '"</td>';
+      groups.forEach(function(g) {
+        const match = (g.type === type);
+        const empId = (match && g.slots) ? (g.slots[slot] || "") : "";
+        html += '<td class="' + (match ? "bm-td " + type : "bm-td") + '">' + escapeHtml(dealerName(empId)) + '</td>';
+      });
+      html += '</tr>';
     });
-    html += '</tr>';
-  });
-  // Pair 슬롯 행
-  pairSlots.forEach(function(slot) {
-    html += '<tr><td class="bm-td-label">' + slot + '"</td>';
-    tableList.forEach(function(t) {
-      const g = tableToGroup[t];
-      const isPair = g && g.type === "pair";
-      const empId = isPair && g.slots ? (g.slots[slot] || "") : "";
-      html += '<td class="' + (isPair ? "bm-td pair" : "bm-td") + '">' + escapeHtml(dealerName(empId)) + '</td>';
-    });
-    html += '</tr>';
-  });
+  };
+
+  if (hasTriple) renderRows(tripleSlots, "triple");
+  if (hasPair) renderRows(pairSlots, "pair");
 
   html += '</tbody></table></div>';
   return html;
