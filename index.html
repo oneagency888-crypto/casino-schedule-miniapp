@@ -15,7 +15,7 @@
     --btn: var(--tg-theme-button-color, #2481cc);
     --btn-text: var(--tg-theme-button-text-color, #ffffff);
     --bg-sec: var(--tg-theme-secondary-bg-color, #f4f4f5);
-    --vac: #A8D5FF; --off: #FFE680; --pre: #FFC58A; --spl: #D8B4FE;
+    --vac: #A8D5FF; --off: #FFE680; --pre: #FFC58A; --spl: #D8B4FE; --sick: #FF9AA2;
     --triple: #c8e6c9; --pair: #ffe0b2;
   }
   * { box-sizing: border-box; }
@@ -78,6 +78,7 @@
   .staff-card .sub { font-size: 11px; color: var(--hint); }
   .staff-card .status { font-size: 11px; padding: 2px 7px; border-radius: 10px; background: var(--bg); }
   .staff-card .status.vac { background: var(--vac); color: #1a3a5a; }
+  .staff-card .status.sick { background: var(--sick); color: #7a1f1f; }
   .staff-card .status.off { background: var(--off); color: #5a4500; }
   .staff-card .status.pre { background: var(--pre); color: #6a3a00; }
   .staff-card .status.spl { background: var(--spl); color: #4a2a6a; }
@@ -86,6 +87,25 @@
   .calendar .head.sun { color: #d94545; }
   .calendar .head.sat { color: #3b6ec7; }
   .day-cell { aspect-ratio: 1; border-radius: 6px; background: var(--bg); border: 1px solid var(--bg-sec); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; line-height: 1.1; padding: 2px; }
+  /* 휴가 확인 오버뷰 그리드 (2026-05-28) */
+  .vc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin: 8px 0 0; }
+  .vc-grid .head { font-size: 10px; color: var(--hint); text-align: center; padding: 2px 0; font-weight: 600; }
+  .vc-grid .head.sat { color: #3b6ec7; }
+  .vc-grid .head.sun { color: #d94545; }
+  .vc-cell { background: var(--bg); border: 1px solid var(--bg-sec); border-radius: 6px; padding: 3px 1px; display: flex; flex-direction: column; align-items: center; gap: 1px; cursor: pointer; min-height: 46px; }
+  .vc-cell.sel { border-color: var(--btn); box-shadow: 0 0 0 1px var(--btn); }
+  .vc-cell .vc-date { font-size: 10px; color: var(--hint); }
+  .vc-cell .vc-att { font-size: 15px; font-weight: 800; color: var(--text); line-height: 1; }
+  .vc-cell .vc-sub { font-size: 9px; color: var(--hint); display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; line-height: 1.1; }
+  .vc-detail .vc-line { font-size: 13px; margin: 5px 0; }
+  .vc-detail .vc-vac { color: #3b6ec7; font-weight: 600; }
+  .vc-detail .vc-off { color: #c79a2b; font-weight: 600; }
+  /* 시프트 관리 (2026-05-28) */
+  .sb-sum-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--bg); }
+  .sb-sum-row .sb-sum-val { color: var(--hint); }
+  .sb-pend-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--hint); margin-top: 6px; flex-wrap: wrap; }
+  .sb-sched-form { display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  .sb-pend-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--bg); }
   .day-cell.today { outline: 2px solid var(--btn); }
   .day-cell.viewer { cursor: default; }
   .day-cell .d { font-size: 12px; font-weight: 600; }
@@ -94,6 +114,7 @@
   .day-cell.off { background: var(--off); color: #5a4500; }
   .day-cell.pre { background: var(--pre); color: #6a3a00; }
   .day-cell.spl { background: var(--spl); color: #4a2a6a; }
+  .day-cell.sick { background: var(--sick); color: #7a1f1f; }
   /* BATCH-1 (2026-05-26): 미적용 변경 시각 표시 — 점선 흰 테두리 */
   .day-cell.pending { outline: 2px dashed #ffffff; outline-offset: -3px; box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset; }
   /* Apply 버튼 — Pending 개수 배지 */
@@ -136,6 +157,7 @@
   .dashboard-card .ds { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; background: rgba(0,0,0,0.3); }
   .dashboard-card .ds .dot { width: 7px; height: 7px; border-radius: 50%; }
   .dashboard-card .ds.vac .dot { background: var(--vac); }
+  .dashboard-card .ds.sick .dot { background: var(--sick); }
   .dashboard-card .ds.off .dot { background: var(--off); }
   .dashboard-card .ds.pre .dot { background: var(--pre); }
   .dashboard-card .ds.spl .dot { background: var(--spl); }
@@ -332,11 +354,12 @@ const I18N = {
     "common.back":"Back","common.today":"Today","common.prev_4w":"◀ Prev 4w","common.next_4w":"Next 4w ▶",
     "common.save":"Save","common.cancel":"Cancel","common.apply":"Apply","common.delete":"Delete",
     "common.active":"Active","common.inactive":"Inactive",
-    "category.dealer":"Dealer","category.supervisor":"Supervisor","category.trainee":"Trainee","category.administrator":"Administrator",
-    "nationality.KR":"Korea","nationality.TH":"Thailand","nationality.PH":"Philippines","nationality.OTHER":"Other",
+    "category.dealer":"Dealer","category.supervisor":"Supervisor","category.trainee":"Trainee","category.administrator":"Administrator","category.manager":"Manager",
+    "nationality.KR":"Korea","nationality.TH":"Thailand","nationality.PH":"Philippines","nationality.JP":"Japan","nationality.VN":"Vietnam","nationality.OTHER":"Other",
     "home.title":"Home","home.quick_actions":"Quick Actions",
-    "home.find_dealer":"Find Dealer","home.vacation_range":"Vacation Range",
-    "home.breaks_today":"Breaks today","home.shift_cycle":"Shift Cycle",
+    "home.find_dealer":"Find Dealer","home.vacation_range":"Vacation Check",
+    "vacchk.legend":"🟦 Vacation  🟨 Day-off  ·  big number = dealers on duty","vacchk.attend":"On duty","vacchk.vacation":"Vacation","vacchk.dayoff":"Day-off","vacchk.tap_hint":"Tap a date to see who's on vacation / day-off.",
+    "home.breaks_today":"Breaks today","home.shift_cycle":"Shift Mgmt",
     "home.add_staff":"Add Staff","home.backup":"Backup",
     "home.shift_view":"Shift view","home.my_view":"My View",
     "home.dash_attendance":"Dealer attendance","home.dash_attendance_sup":"Supervisor attendance","home.dash_attendance_trn":"Trainee attendance","home.dash_shift":"Shift",
@@ -346,8 +369,8 @@ const I18N = {
     "my.supervisor_schedule_note":"Recurring schedule — applies every day until changed by admin.",
     "my.first_break":"first break","my.schedule_4w":"My Schedule · 4 weeks",
     "my.group_with":"Group: {type} with {names}","my.group_alone":"Group: {type} (alone)",
-    "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
-    "state.vacation.full":"Vacation","state.dayoff.full":"Day off","state.pre_practice.full":"Pre-practice","state.special.full":"Special",
+    "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL","state.sick.short":"SICK",
+    "state.vacation.full":"Vacation","state.dayoff.full":"Day off","state.pre_practice.full":"Pre-practice","state.special.full":"Special","state.sick.full":"Sick leave",
     "state.work.full":"Working",
     "shift.M.full":"Morning","shift.A.full":"Afternoon","shift.N.full":"Night",
     "shift.M.time":"07:00–15:00","shift.A.time":"15:00–23:00","shift.N.time":"23:00–07:00 +1d",
@@ -365,7 +388,7 @@ const I18N = {
     "placeholder.backup.desc":"Spreadsheet auto backup (weekly).",
     "search.placeholder":"Type name or ID…",
     "search.filter_all_shifts":"All shifts","search.filter_active":"Active","search.filter_inactive":"Inactive",
-    "search.filter_dealer":"Dealer","search.filter_supervisor":"Supervisor","search.filter_all_cat":"All roles",
+    "search.filter_dealer":"Dealer","search.filter_supervisor":"Supervisor","search.filter_trainee":"Trainee","search.filter_all_cat":"All roles",
     "search.showing":"Showing {n} of {total}","search.no_results":"No matching staff",
     "search.status_working":"working",
     "calendar.set_vacation_range":"Set vacation range","calendar.from":"From","calendar.to":"To",
@@ -423,7 +446,9 @@ const I18N = {
     "staff.field_nationality":"Nationality","staff.field_table":"Default table",
     "staff.confirm_leave":"Mark {name} as left today?",
     "toast.staff_added":"Staff added","toast.staff_updated":"Updated","toast.staff_left":"Marked as left","toast.staff_restored":"Restored",
-    "cycle.title":"Shift Cycle","cycle.list_title":"Cycles",
+    "cycle.title":"Shift Mgmt","cycle.list_title":"Cycles",
+    "shiftmgmt.counts_title":"Current shift headcount","shiftmgmt.search_ph":"Search name…","shiftmgmt.sched_btn":"Schedule","shiftmgmt.sched_save":"Save","shiftmgmt.sched_from":"{shift} from {date}","shiftmgmt.cancel":"Cancel","shiftmgmt.pending_title":"Scheduled changes ({n})","shiftmgmt.changed":"Shift changed","shiftmgmt.scheduled":"Scheduled","shiftmgmt.cancelled":"Cancelled","shiftmgmt.need_date":"Pick an effective date",
+    "req.title":"Request leave","req.type_label":"Type","req.date_label":"Date","req.type_vacation":"Vacation","req.type_dayoff":"Day-off","req.type_sick":"Sick leave","req.submit":"Request","req.note_vacoff":"Vacation/day-off: 14+ days ahead.","req.note_sick":"Sick leave: today only, up to 2h before shift start.","req.my_title":"My requests","req.pending":"Pending","req.cancel":"Cancel","req.submitted":"Requested","req.cancelled":"Request cancelled","req.need_date":"Pick a date","req.admin_title":"Requests ({n})",
     "cycle.add_btn":"➕ New Cycle","cycle.add_new":"Create new cycle",
     "cycle.field_name":"Name","cycle.field_start":"Start date","cycle.field_end":"End date",
     "cycle.range":"{start} ─ {end}","cycle.length_days":"{n} days","cycle.assignments":"{n} assignments",
@@ -446,11 +471,12 @@ const I18N = {
     "common.back":"뒤로","common.today":"오늘","common.prev_4w":"◀ 이전 4주","common.next_4w":"다음 4주 ▶",
     "common.save":"저장","common.cancel":"취소","common.apply":"적용","common.delete":"삭제",
     "common.active":"재직","common.inactive":"비활성",
-    "category.dealer":"딜러","category.supervisor":"슈퍼바이저","category.trainee":"트레이니","category.administrator":"관리자",
-    "nationality.KR":"한국","nationality.TH":"태국","nationality.PH":"필리핀","nationality.OTHER":"그외",
+    "category.dealer":"딜러","category.supervisor":"슈퍼바이저","category.trainee":"트레이니","category.administrator":"관리자","category.manager":"매니저",
+    "nationality.KR":"한국","nationality.TH":"태국","nationality.PH":"필리핀","nationality.JP":"일본","nationality.VN":"베트남","nationality.OTHER":"그외",
     "home.title":"홈","home.quick_actions":"빠른 작업",
-    "home.find_dealer":"딜러 찾기","home.vacation_range":"휴가 범위",
-    "home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 사이클",
+    "home.find_dealer":"딜러 찾기","home.vacation_range":"휴가 확인",
+    "vacchk.legend":"🟦 휴가  🟨 휴무  ·  큰 숫자 = 딜러 출근","vacchk.attend":"출근","vacchk.vacation":"휴가","vacchk.dayoff":"휴무","vacchk.tap_hint":"날짜를 탭하면 그 날 휴가·휴무자가 표시됩니다.",
+    "home.breaks_today":"오늘 휴게","home.shift_cycle":"시프트 관리",
     "home.add_staff":"인원 추가","home.backup":"백업",
     "home.shift_view":"시프트 보기","home.my_view":"내 휴게 보기",
     "home.dash_attendance":"딜러 출근","home.dash_attendance_sup":"슈퍼바이저 출근","home.dash_attendance_trn":"트레이니 출근","home.dash_shift":"시프트",
@@ -460,8 +486,8 @@ const I18N = {
     "my.supervisor_schedule_note":"고정 스케줄 — 관리자가 변경하기 전까지 매일 적용됩니다.",
     "my.first_break":"첫 휴게","my.schedule_4w":"내 스케줄 · 4주",
     "my.group_with":"묶음: {type} — {names}와 함께","my.group_alone":"묶음: {type} (혼자)",
-    "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL",
-    "state.vacation.full":"휴가","state.dayoff.full":"휴무","state.pre_practice.full":"사전연습","state.special.full":"특별",
+    "state.vacation.short":"VAC","state.dayoff.short":"OFF","state.pre_practice.short":"PRE","state.special.short":"SPL","state.sick.short":"SICK",
+    "state.vacation.full":"휴가","state.dayoff.full":"휴무","state.pre_practice.full":"사전연습","state.special.full":"특별","state.sick.full":"병가",
     "state.work.full":"출근",
     "shift.M.full":"모닝","shift.A.full":"애프터눈","shift.N.full":"나잇",
     "shift.M.time":"07:00–15:00","shift.A.time":"15:00–23:00","shift.N.time":"23:00–07:00 익일",
@@ -479,7 +505,7 @@ const I18N = {
     "placeholder.backup.desc":"스프레드시트 자동 백업 (주1회).",
     "search.placeholder":"이름 또는 ID 입력…",
     "search.filter_all_shifts":"모든 시프트","search.filter_active":"재직","search.filter_inactive":"비활성",
-    "search.filter_dealer":"딜러","search.filter_supervisor":"슈퍼바이저","search.filter_all_cat":"모든 역할",
+    "search.filter_dealer":"딜러","search.filter_supervisor":"슈퍼바이저","search.filter_trainee":"트레이니","search.filter_all_cat":"모든 역할",
     "search.showing":"{total}명 중 {n}명 표시","search.no_results":"일치하는 직원 없음",
     "search.status_working":"출근",
     "calendar.set_vacation_range":"휴가 범위 설정","calendar.from":"시작","calendar.to":"종료",
@@ -537,7 +563,9 @@ const I18N = {
     "staff.field_nationality":"국적","staff.field_table":"기본 테이블",
     "staff.confirm_leave":"{name}을(를) 오늘부로 퇴사 처리할까요?",
     "toast.staff_added":"인원 추가됨","toast.staff_updated":"갱신됨","toast.staff_left":"퇴사 처리됨","toast.staff_restored":"재직 복원됨",
-    "cycle.title":"시프트 사이클","cycle.list_title":"사이클 목록",
+    "cycle.title":"시프트 관리","cycle.list_title":"사이클 목록",
+    "shiftmgmt.counts_title":"현재 시프트 인원","shiftmgmt.search_ph":"이름 검색…","shiftmgmt.sched_btn":"시프트 예약","shiftmgmt.sched_save":"예약 저장","shiftmgmt.sched_from":"{date}부터 {shift}","shiftmgmt.cancel":"취소","shiftmgmt.pending_title":"예약된 시프트 변경 ({n})","shiftmgmt.changed":"시프트 변경됨","shiftmgmt.scheduled":"예약됨","shiftmgmt.cancelled":"예약 취소됨","shiftmgmt.need_date":"적용 날짜를 선택하세요",
+    "req.title":"휴가 · 휴무 · 병가 신청","req.type_label":"종류","req.date_label":"날짜","req.type_vacation":"휴가","req.type_dayoff":"휴무","req.type_sick":"병가","req.submit":"신청","req.note_vacoff":"휴가·휴무는 2주 뒤 날짜부터 신청 가능합니다.","req.note_sick":"병가는 당일, 시프트 시작 2시간 전까지만 가능합니다.","req.my_title":"내 신청 내역","req.pending":"대기중","req.cancel":"취소","req.submitted":"신청 완료","req.cancelled":"신청 취소됨","req.need_date":"날짜를 선택하세요","req.admin_title":"신청 ({n})",
     "cycle.add_btn":"➕ 새 사이클","cycle.add_new":"새 사이클 만들기",
     "cycle.field_name":"이름","cycle.field_start":"시작일","cycle.field_end":"종료일",
     "cycle.range":"{start} ─ {end}","cycle.length_days":"{n}일","cycle.assignments":"배치 {n}건",
@@ -577,6 +605,7 @@ function categoryIcon_(category) {
   if (category === "supervisor") return "🎯";
   if (category === "trainee") return "📘";
   if (category === "administrator") return "👑";
+  if (category === "manager") return "🎖️";
   return "👤";
 }
 function nationalityLabel_(code) { if (!code) return ""; return t("nationality." + code); }
@@ -767,22 +796,20 @@ const PLACEHOLDER_SCREENS = {
   "backup":         { emo: "📤", titleKey: "home.backup",         descKey: "placeholder.backup.desc",         stage: 10 }
 };
 
-// REDESIGN-1 (2026-05-26): 휴가 범위 4주 오버뷰 상태
-let vacationOverview = null;     // 서버 응답 (anchor / endDate / employees / dailyCounts / totals)
-let vacationAnchor = null;       // 현재 보고있는 4주 시작
+// 휴가 확인 4주 오버뷰 상태 (2026-05-28 재구성, 승인됨)
+let vacationOverview = null;     // getVacationOverview 응답 (anchor / employees[].days / dailyCounts / dailyShiftAttendance)
+let vacationAnchor = null;       // 현재 보고있는 4주 시작 (ISO, Monday)
 let vacationLoading = false;
-let vacationCandidates = [];     // REQ-5b 전용 화면 후보 직원 목록 (미선언 시 strict ReferenceError → 휴가범위 화면 깨짐)
-// (legacy v1 — REQ-5b 전용 화면 변수도 일부 보존, 빠른 폼 모드 진입 시)
-let vacationEmpId = "";
-let vacationFrom = "";
-let vacationTo = "";
-let vacationQuickFormOpen = false;
+let vacationCheckShift = "A";    // 시프트 탭 (M/A/N) — 출근수는 시프트별
+let vacationCheckDate = null;    // 탭한 날짜 (하단 명단 상세)
 
-// M-4 사이클 화면 상태
-let cycleData = null;        // { cycles: [...], currentCycleId }
-let cycleLoading = false;
-let cycleNewOpen = false;    // 새 사이클 폼 펼침
-let cycleEditingId = null;   // 배치 편집 중인 cycleId
+// 시프트 관리 화면 상태 (2026-05-28, 승인됨) — 기존 사이클 화면 대체. 사이클 서버는 보존.
+let shiftBoard = null;          // getShiftBoard 응답 { shiftCounts, employees, pendingChanges }
+let shiftBoardLoading = false;
+let shiftBoardShift = "A";      // 시프트 탭 (M/A/N) — 그 시프트 인원 목록
+let shiftSearchQ = "";          // 이름 검색 (클라 필터)
+let shiftSchedFor = null;       // 예약 폼 펼친 직원 id (null=닫힘)
+let reqType = "vacation";       // 직원 신청 카드 선택 종류 (vacation/dayoff/sick)
 
 let currentScreen = SCREEN_HOME;
 let currentShift = "A";
@@ -991,10 +1018,11 @@ function renderLiveCard_(velvet) {
   const total = summary.totalDealers || 0;
   const tables = (summary.activeTables || []).join(", ") || "—";
   const cs = summary.stateCounts || {};
-  const groupCnt = summary.groupCount || 0;
+  // 2026-05-28 사용자 요청: 출근 라벨에 시프트명 접두 ("애프터눈 딜러 출근" 식). 시프트는 보고 있는 시프트(summary.shift) 기준.
+  const shiftName = t("shift." + summary.shift + ".full");
 
   const supRow = showManagerRows
-    ? `<div class="dash-row"><span class="dash-label">${t("home.dash_attendance_sup")}</span><span class="dash-value">${summary.supervisorAttendance || 0} / ${summary.totalSupervisors || 0}</span></div>`
+    ? `<div class="dash-row"><span class="dash-label">${shiftName} ${t("home.dash_attendance_sup")}</span><span class="dash-value">${summary.supervisorAttendance || 0} / ${summary.totalSupervisors || 0}</span></div>`
     : "";
   const trnRow = showManagerRows
     ? `<div class="dash-row"><span class="dash-label">${t("home.dash_attendance_trn")}</span><span class="dash-value">${summary.traineeAttendance || 0} / ${summary.totalTrainees || 0}</span></div>`
@@ -1005,12 +1033,11 @@ function renderLiveCard_(velvet) {
       <span class="dash-live">🔴 ${escapeHtml(t("home.live_title"))}</span>
       <span class="dash-time" id="dash-time">${escapeHtml(summary.date + " " + liveTime)}</span>
     </div>
-    <div class="dash-row"><span class="dash-label">${t("home.dash_attendance")}</span><span class="dash-value">${attended} / ${total}</span></div>
+    <div class="dash-row"><span class="dash-label">${shiftName} ${t("home.dash_attendance")}</span><span class="dash-value">${attended} / ${total}</span></div>
     ${supRow}
     ${trnRow}
     <div class="dash-row"><span class="dash-label">${t("home.dash_shift")}</span><span class="dash-value">${escapeHtml(t("shift." + summary.shift + ".full"))} · ${escapeHtml(t("shift." + summary.shift + ".time"))}</span></div>
     <div class="dash-row"><span class="dash-label">${t("home.dash_tables")}</span><span class="dash-value mono">${escapeHtml(tables)}</span></div>
-    <div class="dash-row"><span class="dash-label">${t("home.dash_groups")}</span><span class="dash-value">${groupCnt}</span></div>
     <!-- 2026-05-28 사용자 요청 + 기획 §10.12.1 A LIVE 매트릭스 "선택 기능": renderBreakMatrix_ 재활성화.
          renderLiveCard_ 호출처가 admin(renderAdminHome_) + supervisor(renderMy_ 분기)뿐이라 그 둘만 노출.
          dealer/trainee는 LIVE 카드 자체가 없어 자동 미노출 (§10.12.1 A 대상 역할과 일치). -->
@@ -1020,6 +1047,7 @@ function renderLiveCard_(velvet) {
       <span class="ds off"><span class="dot"></span>OFF ${cs.dayoff || 0}</span>
       <span class="ds pre"><span class="dot"></span>PRE ${cs.pre_practice || 0}</span>
       <span class="ds spl"><span class="dot"></span>SPL ${cs.special || 0}</span>
+      <span class="ds sick"><span class="dot"></span>SICK ${cs.sick || 0}</span>
     </div>
   </div>`;
 }
@@ -1030,7 +1058,7 @@ function renderAdminHome_(user) {
   //   순서: 환영 → LIVE(통계+매트릭스) → Quick Actions. (사용자 직접 승인 = 게이트. Quick Actions가 LIVE 아래로 내려감)
   return `
     <div class="card"><h2>${escapeHtml(t("boot.welcome_admin", { name }))}</h2>
-      <p class="hint">${escapeHtml(t("category.administrator"))} · ${escapeHtml(t("shift." + user.defaultShift + ".full"))}</p>
+      <p class="hint">${escapeHtml(t(user.category === "manager" ? "category.manager" : "category.administrator"))}</p>
     </div>
     ${renderLiveCard_()}
     <div class="card"><h2>${t("home.quick_actions")}</h2>
@@ -1070,7 +1098,7 @@ function renderFindDealer_() {
     <input type="text" id="search-q" class="search-bar" placeholder="${escapeHtml(t("search.placeholder"))}" value="${escapeHtml(searchQuery)}">
     <div class="filter-row">
       <select id="filter-shift"><option value="all">${t("search.filter_all_shifts")}</option><option value="M">${t("shift.M.full")}</option><option value="A">${t("shift.A.full")}</option><option value="N">${t("shift.N.full")}</option></select>
-      <select id="filter-category"><option value="all">${t("search.filter_all_cat")}</option><option value="dealer">${t("search.filter_dealer")}</option><option value="supervisor">${t("search.filter_supervisor")}</option></select>
+      <select id="filter-category"><option value="all">${t("search.filter_all_cat")}</option><option value="dealer">${t("search.filter_dealer")}</option><option value="supervisor">${t("search.filter_supervisor")}</option><option value="trainee">${t("search.filter_trainee")}</option></select>
       <select id="filter-active"><option value="true">${t("search.filter_active")}</option><option value="false">${t("search.filter_inactive")}</option><option value="all">${t("search.filter_all_shifts")}</option></select>
     </div>
     <div class="result-count" id="result-count">${searchLoading ? t("common.loading") : ""}</div>
@@ -1129,6 +1157,7 @@ function renderStaffCard_(s) {
   else if (s.todayState === "dayoff") statusHtml = `<span class="status off">${t("state.dayoff.short")}</span>`;
   else if (s.todayState === "pre_practice") statusHtml = `<span class="status pre">${t("state.pre_practice.short")}</span>`;
   else if (s.todayState === "special") statusHtml = `<span class="status spl">${t("state.special.short")}</span>`;
+  else if (s.todayState === "sick") statusHtml = `<span class="status sick">${t("state.sick.short")}</span>`;
   else statusHtml = `<span class="status">${t("search.status_working")}</span>`;
   return `<div class="staff-card" data-staff-id="${escapeHtml(s.id)}" data-staff-name="${escapeHtml(name)}"><div class="avatar">👤</div><div class="body"><div class="name">${escapeHtml(name)}</div><div class="sub">${sub}</div></div>${statusHtml}</div>`;
 }
@@ -1191,10 +1220,11 @@ function renderCalendar_(user) {
     else if (d.state === "dayoff") cls.push("off");
     else if (d.state === "pre_practice") cls.push("pre");
     else if (d.state === "special") cls.push("spl");
+    else if (d.state === "sick") cls.push("sick");
     if (d.isToday) cls.push("today");
     if (!isAdmin) cls.push("viewer");
     if (d.pending) cls.push("pending");  // BATCH-1: 미적용 변경 시각 표시
-    const lblText = d.state === "vacation" ? t("state.vacation.short") : d.state === "dayoff" ? t("state.dayoff.short") : d.state === "pre_practice" ? t("state.pre_practice.short") : d.state === "special" ? t("state.special.short") : "";
+    const lblText = d.state === "vacation" ? t("state.vacation.short") : d.state === "dayoff" ? t("state.dayoff.short") : d.state === "pre_practice" ? t("state.pre_practice.short") : d.state === "special" ? t("state.special.short") : d.state === "sick" ? t("state.sick.short") : "";
     return `<div class="${cls.join(" ")}" data-cell-date="${d.iso}" data-cell-state="${d.state}"><span class="d">${d.day}</span>${lblText?`<span class="lbl">${lblText}</span>`:""}</div>`;
   }).join("");
   const vacForm = isAdmin ? `<div class="card"><h2>${t("calendar.set_vacation_range")}</h2>
@@ -1215,7 +1245,7 @@ function renderCalendar_(user) {
 function toggleCell(date, currentVisualState) {
   if (applyingPending) return;  // 적용 중에는 클릭 무시
   // REQ-4 (2026-05-26): 순서 — work → dayoff → vacation → pre_practice → special → work
-  const order = ["work","dayoff","vacation","pre_practice","special"];
+  const order = ["work","dayoff","vacation","pre_practice","special","sick"];
   const next = order[(order.indexOf(currentVisualState) + 1) % order.length];
 
   // 서버 원본 상태 조회
@@ -1551,7 +1581,7 @@ async function loadMyData_(forceFresh) {
             const vv = rawMap[id] || {};
             nameMap[id] = (LANG === "ko" && vv.ko) ? vv.ko : (vv.en || id);
           });
-          myData = { anchor: v.anchor, dayStates: v.dayStates, breaksData: v.breaks || null, nameMap };
+          myData = { anchor: v.anchor, dayStates: v.dayStates, breaksData: v.breaks || null, nameMap, myRequests: v.myRequests || [] };
           myDataFetchedAt = Date.now();  // VERIFY-1
           render();
         }
@@ -1569,7 +1599,8 @@ async function loadMyData_(forceFresh) {
       anchor: r.data.anchor,
       dayStates: r.data.dayStates,
       breaksData: r.data.breaks || null,
-      nameMap: nameMap
+      nameMap: nameMap,
+      myRequests: r.data.myRequests || []
     };
     myDataFetchedAt = Date.now();  // VERIFY-1
   } catch (err) {
@@ -1705,8 +1736,9 @@ function renderMy_(user) {
     else if (d.state === "dayoff") cls.push("off");
     else if (d.state === "pre_practice") cls.push("pre");
     else if (d.state === "special") cls.push("spl");
+    else if (d.state === "sick") cls.push("sick");
     if (d.isToday) cls.push("today");
-    const lblText = d.state === "vacation" ? t("state.vacation.short") : d.state === "dayoff" ? t("state.dayoff.short") : d.state === "pre_practice" ? t("state.pre_practice.short") : d.state === "special" ? t("state.special.short") : "";
+    const lblText = d.state === "vacation" ? t("state.vacation.short") : d.state === "dayoff" ? t("state.dayoff.short") : d.state === "pre_practice" ? t("state.pre_practice.short") : d.state === "special" ? t("state.special.short") : d.state === "sick" ? t("state.sick.short") : "";
     return `<div class="${cls.join(" ")}"><span class="d">${d.day}</span>${lblText?`<span class="lbl">${lblText}</span>`:""}</div>`;
   }).join("");
 
@@ -1723,23 +1755,17 @@ function renderMy_(user) {
       <span class="legend-item"><span class="swatch" style="background:var(--off)"></span>${t("state.dayoff.short")}</span>
       <span class="legend-item"><span class="swatch" style="background:var(--pre)"></span>${t("state.pre_practice.short")}</span>
       <span class="legend-item"><span class="swatch" style="background:var(--spl)"></span>${t("state.special.short")}</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--sick)"></span>${t("state.sick.short")}</span>
     </div>
     <div class="calendar">${dowHeader}${cells}</div>
   </div>`;
 
-  const contactCard = `<div class="card ruby-card"><p class="hint">${t("my.contact_admin_for_off")}</p></div>`;
-
-  // §14 (2026-05-27): §10.12.8 B 화면 5B 분기 — supervisor만 todayCard 다음에
-  // No-edit notice (§8.31 옵션 A) + LIVE 카드 (§10.12.8 B) 삽입.
-  // 카드 순서: Header → Today's Breaks (1, §8.30 옵션 A — SPEC §9 규칙 3 준수)
-  //            → No-edit notice → LIVE → My Schedule → Contact Admin.
+  // 2026-05-28: "관리자에게 문의" 안내 → 신청 카드(휴가/휴무/병가)로 대체.
+  // 카드 순서: Header → Today's Breaks → (supervisor: LIVE) → My Schedule → 신청 카드.
   if (user.category === "supervisor") {
-    const supEditNotice = `<div class="card ruby-card"><p class="hint">📌 ${escapeHtml(t("super.no_edit_notice"))}</p></div>`;
-    const supContactCard = `<div class="card ruby-card"><p class="hint">${escapeHtml(t("super.contact_admin_for_break"))}</p></div>`;
-    return headerCard + todayCard + supEditNotice + renderLiveCard_(true) + calendarCard + supContactCard;
+    return headerCard + todayCard + renderLiveCard_(true) + calendarCard + renderRequestCard_(user);
   }
-
-  return headerCard + todayCard + calendarCard + contactCard;
+  return headerCard + todayCard + calendarCard + renderRequestCard_(user);
 }
 
 // §14 (2026-05-27): §10.12.8 B 화면 5B — supervisor 전용 홈 엔트리.
@@ -1748,6 +1774,60 @@ function renderMy_(user) {
 // (검수자 §10.12.8 D "openMyB()" 의사코드 1:1 매핑)
 function renderSupervisorHome_(user) {
   return renderMy_(user);
+}
+
+// 직원 신청 카드 (2026-05-28, 승인됨): 휴가/휴무/병가 신청 + 내 신청 내역. 딜러/슈퍼 공용.
+function renderRequestCard_(user) {
+  const reqs = (myData && myData.myRequests) || [];
+  const typeOpts = [["vacation", t("req.type_vacation")], ["dayoff", t("req.type_dayoff")], ["sick", t("req.type_sick")]]
+    .map(function(p) { return `<option value="${p[0]}" ${reqType === p[0] ? "selected" : ""}>${escapeHtml(p[1])}</option>`; }).join("");
+  const today = todayIso();
+  let dateOpts = "";
+  if (reqType === "sick") {
+    dateOpts = `<option value="${today}">${escapeHtml(today)}</option>`;
+  } else {
+    for (let i = 14; i <= 44; i++) {
+      const d = fmtDate(addDays(parseDate(today), i));
+      dateOpts += `<option value="${d}">${escapeHtml(d)}</option>`;
+    }
+  }
+  const note = (reqType === "sick") ? t("req.note_sick") : t("req.note_vacoff");
+  const myList = reqs.length === 0 ? "" : `<div class="card ruby-card">
+    <h2 style="font-size:14px;">${t("req.my_title")}</h2>
+    ${reqs.map(function(r) {
+      return `<div class="sb-pend-row"><span>${escapeHtml(t("req.type_" + r.type))} · ${escapeHtml(r.date)} · ${t("req.pending")}</span><button class="btn ghost small" data-req-cancel="${escapeHtml(r.id)}">${t("req.cancel")}</button></div>`;
+    }).join("")}
+  </div>`;
+  return `<div class="card ruby-card">
+    <h2 style="font-size:14px;">${t("req.title")}</h2>
+    <label>${t("req.type_label")}</label>
+    <select id="req-type" style="margin-top:4px;">${typeOpts}</select>
+    <label style="margin-top:8px; display:block;">${t("req.date_label")}</label>
+    <select id="req-date" style="margin-top:4px;">${dateOpts}</select>
+    <button class="btn" id="req-submit" style="margin-top:10px; width:100%;">${t("req.submit")}</button>
+    <p class="hint" style="margin-top:8px; font-size:11px;">${escapeHtml(note)}</p>
+  </div>${myList}`;
+}
+
+async function submitRequest() {
+  const typeEl = document.getElementById("req-type");
+  const dateEl = document.getElementById("req-date");
+  const type = typeEl ? typeEl.value : "";
+  const date = dateEl ? dateEl.value : "";
+  if (!type || !date) { showToast(t("req.need_date"), 2500); return; }
+  try {
+    const r = await apiPost("submitStaffRequest", { type: type, date: date });
+    if (r && r.ok) { showToast(t("req.submitted")); await loadMyData_(true); }
+    else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+}
+
+async function cancelRequest(id) {
+  try {
+    const r = await apiPost("cancelStaffRequest", { id: id });
+    if (r && r.ok) { showToast(t("req.cancelled")); await loadMyData_(true); }
+    else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
 }
 
 async function moveMyAnchor(days) {
@@ -1815,6 +1895,7 @@ function renderStaff_(user) {
         <option value="supervisor">${t("category.supervisor")}</option>
         <option value="trainee">${t("category.trainee")}</option>
         <option value="administrator">${t("category.administrator")}</option>
+        <option value="manager">${t("category.manager")}</option>
       </select></div>
       <div><label>${t("staff.field_shift")}</label><select id="new-shift"><option value="M">${t("shift.M.full")}</option><option value="A" selected>${t("shift.A.full")}</option><option value="N">${t("shift.N.full")}</option></select></div>
     </div>
@@ -1829,6 +1910,8 @@ function renderStaff_(user) {
         <option value="KR">${t("nationality.KR")}</option>
         <option value="TH">${t("nationality.TH")}</option>
         <option value="PH">${t("nationality.PH")}</option>
+        <option value="JP">${t("nationality.JP")}</option>
+        <option value="VN">${t("nationality.VN")}</option>
         <option value="OTHER">${t("nationality.OTHER")}</option>
       </select>
     </div>
@@ -1854,7 +1937,9 @@ function renderStaffMgmtCard_(s) {
     <div class="actions">
       <button class="btn ghost" data-staff-edit="${escapeHtml(s.id)}">${t("staff.edit")}</button>
       ${s.active
-        ? `<button class="btn ghost" data-staff-leave="${escapeHtml(s.id)}" data-staff-name="${escapeHtml(name)}">${t("staff.leave")}</button>`
+        ? ((bootData && bootData.user && bootData.user.id === s.id)
+            ? ""
+            : `<button class="btn ghost" data-staff-leave="${escapeHtml(s.id)}" data-staff-name="${escapeHtml(name)}">${t("staff.leave")}</button>`)
         : `<button class="btn ghost" data-staff-restore="${escapeHtml(s.id)}">${t("staff.restore")}</button>`}
     </div>
   </div>`;
@@ -1872,6 +1957,7 @@ function renderStaffEditForm_(s) {
             <option value="supervisor" ${s.category === "supervisor" ? "selected" : ""}>${t("category.supervisor")}</option>
             <option value="trainee" ${s.category === "trainee" ? "selected" : ""}>${t("category.trainee")}</option>
             <option value="administrator" ${s.category === "administrator" ? "selected" : ""}>${t("category.administrator")}</option>
+            <option value="manager" ${s.category === "manager" ? "selected" : ""}>${t("category.manager")}</option>
           </select>
         </div>
         <div><label>${t("staff.field_shift")}</label>
@@ -1890,6 +1976,8 @@ function renderStaffEditForm_(s) {
           <option value="KR" ${s.nationality === "KR" ? "selected" : ""}>${t("nationality.KR")}</option>
           <option value="TH" ${s.nationality === "TH" ? "selected" : ""}>${t("nationality.TH")}</option>
           <option value="PH" ${s.nationality === "PH" ? "selected" : ""}>${t("nationality.PH")}</option>
+          <option value="JP" ${s.nationality === "JP" ? "selected" : ""}>${t("nationality.JP")}</option>
+          <option value="VN" ${s.nationality === "VN" ? "selected" : ""}>${t("nationality.VN")}</option>
           <option value="OTHER" ${s.nationality === "OTHER" ? "selected" : ""}>${t("nationality.OTHER")}</option>
         </select>
       </div>
@@ -1979,94 +2067,122 @@ async function restoreStaff(id) {
 }
 
 // ────────────────────────────────────────────────────────────
-// REQ-5b (2026-05-26): Vacation Range 전용 화면
-// 직원 선택 + 기간 + Apply (단축 경로 — Find Dealer 거치지 않음)
+// 휴가 확인 (2026-05-28 재구성, 승인됨): 4주 오버뷰 캘린더 — 보기 전용.
+//   getVacationOverview 활용 (서버 무변경). 시프트 탭 + 그리드(딜러출근/슈퍼수/휴가·휴무 배지)
+//   + 날짜 탭 시 하단 명단 상세. 휴가 입력은 딜러 캘린더(화면3 셀 토글/범위)에서.
 // ────────────────────────────────────────────────────────────
-// §12-B 롤백 (2026-05-26): REDESIGN-1 4주 오버뷰 → REQ-5b 단순 폼 복원.
-// L3 게이트 누락 자인. server `getVacationOverview` 엔드포인트 정의는 보존 (재사용 가능).
 async function openVacationRange() {
   currentScreen = SCREEN_VACATION;
   vacationLoading = true;
-  vacationFrom = todayIso();
-  vacationTo = fmtDate(addDays(new Date(), 4));
-  vacationEmpId = "";
+  vacationCheckDate = null;
+  if (!vacationAnchor) vacationAnchor = mondayOfThisWeek();
+  const u = (bootData && bootData.user) || {};
+  if (u.defaultShift && ["M","A","N"].indexOf(u.defaultShift) >= 0) vacationCheckShift = u.defaultShift;
   render();
   try {
-    const r = await apiGetCached("searchStaff", { q: "", shift: "all", category: "all", active: "true", limit: 500, offset: 0 });
-    if (r && r.ok && r.data) vacationCandidates = r.data.items || [];
-    else vacationCandidates = [];
+    const r = await apiGetCached("getVacationOverview", { anchor: vacationAnchor });
+    vacationOverview = (r && r.ok && r.data) ? r.data : null;
   } catch (err) {
-    vacationCandidates = [];
+    vacationOverview = null;
     showToast(t("toast.action_failed", { msg: err.message || err }));
   }
   vacationLoading = false;
   render();
 }
 
+async function moveVacationCheck(delta) {
+  vacationAnchor = (delta === 0) ? mondayOfThisWeek() : fmtDate(addDays(parseDate(vacationAnchor), delta));
+  vacationCheckDate = null;
+  await openVacationRange();
+}
+
+function vacNamesForState_(ov, iso, shift, state) {
+  const out = [];
+  (ov.employees || []).forEach(function(e) {
+    if (shift && e.defaultShift !== shift) return;
+    if ((e.days || {})[iso] === state) {
+      out.push((LANG === "ko" && e.name_ko) ? e.name_ko : (e.name_en || e.id));
+    }
+  });
+  return out;
+}
+
+function renderVacDetail_(ov, iso, shift) {
+  const att = (ov.dailyShiftAttendance[iso] && ov.dailyShiftAttendance[iso][shift]) || { dealer: 0, supervisor: 0 };
+  const vacNames = vacNamesForState_(ov, iso, shift, "vacation");
+  const offNames = vacNamesForState_(ov, iso, shift, "dayoff");
+  const d = parseDate(iso);
+  const dow = ["calendar.sun","calendar.mon","calendar.tue","calendar.wed","calendar.thu","calendar.fri","calendar.sat"][d.getDay()];
+  const dateLabel = (d.getMonth()+1) + "/" + d.getDate() + " (" + t(dow) + ") · " + t("shift." + shift + ".full");
+  const vacLine = `<p class="vc-line vc-vac">🟦 ${t("vacchk.vacation")} ${vacNames.length}${vacNames.length ? " : " + escapeHtml(vacNames.join(", ")) : ""}</p>`;
+  const offLine = `<p class="vc-line vc-off">🟨 ${t("vacchk.dayoff")} ${offNames.length}${offNames.length ? " : " + escapeHtml(offNames.join(", ")) : ""}</p>`;
+  return `<div class="card vc-detail">
+    <h2 style="font-size:15px;">${escapeHtml(dateLabel)}</h2>
+    <p class="vc-line">${t("vacchk.attend")} · ${escapeHtml(t("category.dealer"))} ${att.dealer} · ${escapeHtml(t("category.supervisor"))} ${att.supervisor}</p>
+    ${vacLine}
+    ${offLine}
+  </div>`;
+}
+
 function renderVacation_(user) {
   if (!user || !user.isAdmin) return `<div class="card"><p class="hint">${t("error.forbidden")}</p></div>`;
-  if (vacationLoading && vacationCandidates.length === 0) {
+  if (vacationLoading && !vacationOverview) {
     return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
   }
-  const opts = vacationCandidates.slice().sort(function(a, b) {
-    const an = (LANG === "ko" && a.name_ko) ? a.name_ko : (a.name_en || "");
-    const bn = (LANG === "ko" && b.name_ko) ? b.name_ko : (b.name_en || "");
-    return an.localeCompare(bn);
-  });
-  const optsHtml = opts.map(function(e) {
-    const nm = (LANG === "ko" && e.name_ko) ? e.name_ko : (e.name_en || e.id);
-    const extras = [categoryIcon_(e.category) + " " + categoryLabel_(e.category)];
-    if (e.nationality) extras.push(nationalityLabel_(e.nationality));
-    return `<option value="${escapeHtml(e.id)}" ${e.id === vacationEmpId ? "selected" : ""}>${escapeHtml(nm + " (" + extras.join(" · ") + ")")}</option>`;
+  const ov = vacationOverview;
+  if (!ov) return `<div class="card"><p class="hint">${escapeHtml(t("toast.action_failed", { msg: "—" }))}</p></div>`;
+
+  const shift = vacationCheckShift;
+  const anchor = ov.anchor;
+
+  const shiftTabs = ["M","A","N"].map(function(s) {
+    return `<button class="shift-tab ${shift === s ? "active" : ""}" data-vac-shift="${s}">${t("shift." + s + ".full")}</button>`;
   }).join("");
+
+  const dowKeys = ["calendar.mon","calendar.tue","calendar.wed","calendar.thu","calendar.fri","calendar.sat","calendar.sun"];
+  const dowHeader = dowKeys.map(function(k, i) { return `<div class="head ${i===5?"sat":i===6?"sun":""}">${t(k)}</div>`; }).join("");
+
+  let cells = "";
+  for (let i = 0; i < 28; i++) {
+    const iso = fmtDate(addDays(parseDate(anchor), i));
+    const dayNum = parseDate(iso).getDate();
+    const att = (ov.dailyShiftAttendance[iso] && ov.dailyShiftAttendance[iso][shift]) || { dealer: 0, supervisor: 0 };
+    const dc = ov.dailyCounts[iso] || { vacation: 0, dayoff: 0 };
+    const vacB = dc.vacation > 0 ? `<span class="vc-badge">🟦${dc.vacation}</span>` : "";
+    const offB = dc.dayoff > 0 ? `<span class="vc-badge">🟨${dc.dayoff}</span>` : "";
+    cells += `<button class="vc-cell ${iso === vacationCheckDate ? "sel" : ""}" data-vac-date="${iso}"><span class="vc-date">${dayNum}</span><span class="vc-att">${att.dealer}</span><span class="vc-sub">S${att.supervisor}${vacB}${offB}</span></button>`;
+  }
+
+  const detail = vacationCheckDate ? renderVacDetail_(ov, vacationCheckDate, shift)
+    : `<div class="card"><p class="hint">${t("vacchk.tap_hint")}</p></div>`;
+
+  // 직원 신청 목록 (admin 보기 전용 — 수동 반영)
+  const reqs = ov.requests || [];
+  const reqList = reqs.length === 0 ? "" : `<div class="card">
+    <h2>${escapeHtml(t("req.admin_title", { n: reqs.length }))}</h2>
+    ${reqs.map(function(r) {
+      const rnm = (LANG === "ko" && r.name_ko) ? r.name_ko : (r.name_en || r.employeeId);
+      return `<div class="sb-pend-row"><span>${escapeHtml(rnm)} · ${escapeHtml(t("req.type_" + r.type))} · ${escapeHtml(r.date)}</span></div>`;
+    }).join("")}
+  </div>`;
 
   return `
     <div class="card">
-      <h2>📅 ${t("home.vacation_range")}</h2>
-      <p class="hint">${t("vacation.intro")}</p>
+      <div class="shift-tabs">${shiftTabs}</div>
+      <div class="anchor-nav">
+        <button class="ghost" data-vac-nav="-28">${t("common.prev_4w")}</button>
+        <span class="range">${escapeHtml(rangeLabel(anchor))}</span>
+        <button class="ghost" data-vac-nav="0">${t("common.today")}</button>
+        <button class="ghost" data-vac-nav="28">${t("common.next_4w")}</button>
+      </div>
+      <p class="hint" style="margin-top:8px; font-size:11px;">${t("vacchk.legend")}</p>
     </div>
     <div class="card">
-      <label>${t("vacation.select_employee")}</label>
-      <select id="vac-emp-select" style="margin-top:6px;">
-        <option value="">${t("vacation.placeholder_select")}</option>
-        ${optsHtml}
-      </select>
-      <div class="row2" style="margin-top:10px;">
-        <div><label>${t("calendar.from")}</label><input type="date" id="vac-range-from" value="${escapeHtml(vacationFrom)}"></div>
-        <div><label>${t("calendar.to")}</label><input type="date" id="vac-range-to" value="${escapeHtml(vacationTo)}"></div>
-      </div>
-      <button class="btn" id="vac-range-apply" style="margin-top:10px; width:100%;">${t("calendar.apply_vacation")}</button>
-      <p class="hint" style="margin-top:8px; font-size:11px;">${t("vacation.note_pinned")}</p>
+      <div class="vc-grid">${dowHeader}${cells}</div>
     </div>
+    ${detail}
+    ${reqList}
   `;
-}
-
-async function submitVacationRange() {
-  const empSel = document.getElementById("vac-emp-select");
-  const fromEl = document.getElementById("vac-range-from");
-  const toEl = document.getElementById("vac-range-to");
-  const empId = empSel ? empSel.value : "";
-  const from = fromEl ? fromEl.value : "";
-  const to = toEl ? toEl.value : "";
-  if (!empId) { showToast(t("vacation.need_employee"), 2500); return; }
-  if (!from || !to) { showToast(t("vacation.need_dates"), 2500); return; }
-  if (from > to) { showToast(t("toast.from_after_to"), 2500); return; }
-  try {
-    const r = await apiPost("applyVacationRange", { employeeId: empId, startDate: from, endDate: to });
-    invalidateCache("searchStaff"); invalidateCache("getStaffDetail"); invalidateCache("getMyView"); invalidateCache("getBreaks");
-    if (r && r.ok && r.data) {
-      const aff = (r.data.affectedDates || []).length;
-      const skip = (r.data.skippedDates || []).length;
-      let msg = t("toast.vacation_applied", { n: aff });
-      if (skip > 0) msg += " · " + t("toast.vacation_pinned_skipped", { n: skip });
-      showToast(msg, 3500);
-      // §12-B 롤백: REDESIGN-1 4주 오버뷰 자동 새로고침 제거.
-    } else {
-      showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
-    }
-  } catch (err) {
-    showToast(t("toast.action_failed", { msg: err.message || err }));
-  }
 }
 
 // ────────────────────────────────────────────────────────────
@@ -2074,101 +2190,142 @@ async function submitVacationRange() {
 // ────────────────────────────────────────────────────────────
 async function openCycleMgmt() {
   currentScreen = SCREEN_CYCLE;
-  cycleData = null; cycleNewOpen = false; cycleEditingId = null;
+  shiftBoard = null; shiftSchedFor = null; shiftSearchQ = "";
+  const u = (bootData && bootData.user) || {};
+  if (u.defaultShift && ["M","A","N"].indexOf(u.defaultShift) >= 0) shiftBoardShift = u.defaultShift;
   render();
-  await loadCycles_();
+  await loadShiftBoard_();
 }
 
-async function loadCycles_() {
-  cycleLoading = true; render();
+async function loadShiftBoard_() {
+  shiftBoardLoading = true; render();
   try {
-    const r = await apiGetCached("listShiftCycles");
-    if (r && r.ok && r.data) cycleData = r.data;
+    const r = await apiGetCached("getShiftBoard");
+    if (r && r.ok && r.data) shiftBoard = r.data;
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
-  cycleLoading = false; render();
+  shiftBoardLoading = false; render();
 }
 
 function renderCycle_(user) {
-  const isAdmin = !!user.isAdmin;
-  if (cycleLoading && !cycleData) return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
-  if (!cycleData) return `<div class="card"><p class="hint">${t("search.no_results")}</p></div>`;
-  const today = todayIso();
-  const cycles = cycleData.cycles || [];
+  if (!user || !user.isAdmin) return `<div class="card"><p class="hint">${t("error.forbidden")}</p></div>`;
+  if (shiftBoardLoading && !shiftBoard) return `<div class="card"><p class="hint">${t("common.loading")}</p></div>`;
+  if (!shiftBoard) return `<div class="card"><p class="hint">${t("search.no_results")}</p></div>`;
 
-  const headerCard = `<div class="card">
-    <h2>${t("cycle.list_title")}</h2>
-    ${isAdmin ? `<div class="filter-row"><button class="btn small" id="cycle-add-toggle">${cycleNewOpen ? t("cycle.cancel") : t("cycle.add_btn")}</button></div>` : ""}
+  const shifts = ["M","A","N"];
+  const sc = shiftBoard.shiftCounts || {};
+
+  // 현재 시프트 인원 요약
+  const summaryRows = shifts.map(function(s) {
+    const c = sc[s] || { dealer: 0, supervisor: 0, trainee: 0 };
+    const trn = c.trainee ? " · " + escapeHtml(t("category.trainee")) + " " + c.trainee : "";
+    return `<div class="sb-sum-row"><span>${escapeHtml(t("shift." + s + ".full"))}</span><span class="sb-sum-val">${escapeHtml(t("category.dealer"))} ${c.dealer} · ${escapeHtml(t("category.supervisor"))} ${c.supervisor}${trn}</span></div>`;
+  }).join("");
+
+  // 시프트 탭
+  const shiftTabs = shifts.map(function(s) {
+    return `<button class="shift-tab ${shiftBoardShift === s ? "active" : ""}" data-shiftb="${s}">${t("shift." + s + ".full")}</button>`;
+  }).join("");
+
+  // pending → empId 배열 맵 (여러 건 대기 허용)
+  const pendingByEmp = {};
+  (shiftBoard.pendingChanges || []).forEach(function(c) {
+    if (!pendingByEmp[c.employeeId]) pendingByEmp[c.employeeId] = [];
+    pendingByEmp[c.employeeId].push(c);
+  });
+
+  // 해당 시프트 인원 (검색 필터)
+  const q = (shiftSearchQ || "").toLowerCase();
+  const emps = (shiftBoard.employees || []).filter(function(e) {
+    if (e.defaultShift !== shiftBoardShift) return false;
+    if (q) { const hay = (e.name_en + " " + e.name_ko + " " + e.id).toLowerCase(); if (hay.indexOf(q) < 0) return false; }
+    return true;
+  });
+  const empCards = emps.length === 0
+    ? `<p class="hint" style="text-align:center;">${t("search.no_results")}</p>`
+    : emps.map(function(e) { return renderShiftEmpCard_(e, pendingByEmp[e.id] || []); }).join("");
+
+  // 예약된 변경 전체 목록 (effectiveDate 순)
+  const pend = (shiftBoard.pendingChanges || []).slice().sort(function(a, b) { return (a.effectiveDate || "").localeCompare(b.effectiveDate || ""); });
+  const pendList = pend.length === 0 ? "" : `<div class="card">
+    <h2>${escapeHtml(t("shiftmgmt.pending_title", { n: pend.length }))}</h2>
+    ${pend.map(function(c) {
+      const nm = (LANG === "ko" && c.name_ko) ? c.name_ko : (c.name_en || c.employeeId);
+      return `<div class="sb-pend-row"><span>${escapeHtml(nm)} · ${escapeHtml(t("shiftmgmt.sched_from", { date: c.effectiveDate, shift: t("shift." + c.toShift + ".full") }))}</span><button class="btn ghost small" data-sched-cancel="${escapeHtml(c.id)}">${t("shiftmgmt.cancel")}</button></div>`;
+    }).join("")}
   </div>`;
 
-  // 신규 폼
-  const todayPlus27 = fmtDate(addDays(parseDate(today), 27));
-  const newForm = (isAdmin && cycleNewOpen) ? `<div class="card"><div class="add-form-card">
-    <h2 style="margin-top:0;">${t("cycle.add_new")}</h2>
-    <div><label>${t("cycle.field_name")}</label><input type="text" id="cycle-new-name" placeholder="Cycle 2026-W22"></div>
-    <div class="row2" style="margin-top:6px;">
-      <div><label>${t("cycle.field_start")}</label><input type="date" id="cycle-new-start" value="${today}"></div>
-      <div><label>${t("cycle.field_end")}</label><input type="date" id="cycle-new-end" value="${todayPlus27}"></div>
+  return `
+    <div class="card">
+      <h2>${t("shiftmgmt.counts_title")}</h2>
+      ${summaryRows}
     </div>
-    <button class="btn" id="cycle-new-save" style="margin-top:10px; width:100%;">${t("cycle.save")}</button>
-  </div></div>` : "";
-
-  // 사이클 목록
-  const cycleCards = cycles.length === 0
-    ? `<p class="hint" style="text-align:center;">${t("cycle.no_cycles")}</p>`
-    : cycles.map(c => renderCycleCard_(c, today, isAdmin)).join("");
-
-  return headerCard + newForm + `<div class="card"><div>${cycleCards}</div></div>`;
+    <div class="card">
+      <div class="shift-tabs">${shiftTabs}</div>
+      <input type="text" id="shift-search" placeholder="${escapeHtml(t("shiftmgmt.search_ph"))}" value="${escapeHtml(shiftSearchQ)}" style="margin-top:10px;">
+      <p class="hint" style="margin-top:6px;">${escapeHtml(t("shift." + shiftBoardShift + ".full"))} · ${emps.length}</p>
+      <div>${empCards}</div>
+    </div>
+    ${pendList}
+  `;
 }
 
-function renderCycleCard_(c, today, isAdmin) {
-  const startIso = c.startDate || "";
-  const endIso = c.endDate || "";
-  let badge = t("cycle.future");
-  if (startIso && endIso && startIso <= today && today <= endIso) badge = t("cycle.current");
-  else if (endIso && endIso < today) badge = t("cycle.past");
-  const days = (startIso && endIso)
-    ? (Math.round((parseDate(endIso) - parseDate(startIso)) / 86400000) + 1)
-    : 0;
-  const name = escapeHtml(c.name || c.id);
-  const isCurrent = badge === t("cycle.current");
+function renderShiftEmpCard_(e, pendingArr) {
+  const nm = (LANG === "ko" && e.name_ko) ? e.name_ko : (e.name_en || e.id);
+  const shiftOpts = ["M","A","N"].map(function(s) {
+    return `<option value="${s}" ${e.defaultShift === s ? "selected" : ""}>${t("shift." + s + ".full")}</option>`;
+  }).join("");
+  const pendBadges = (pendingArr || []).slice().sort(function(a, b) { return (a.effectiveDate || "").localeCompare(b.effectiveDate || ""); }).map(function(c) {
+    return `<div class="sb-pend-badge">⏳ ${escapeHtml(t("shiftmgmt.sched_from", { date: c.effectiveDate, shift: t("shift." + c.toShift + ".full") }))} <button class="btn ghost small" data-sched-cancel="${escapeHtml(c.id)}">${t("shiftmgmt.cancel")}</button></div>`;
+  }).join("");
+  const schedForm = (shiftSchedFor === e.id) ? `<div class="sb-sched-form">
+    <select data-sched-shift="${escapeHtml(e.id)}">${["M","A","N"].map(function(s){ return `<option value="${s}">${t("shift." + s + ".full")}</option>`; }).join("")}</select>
+    <input type="date" data-sched-date="${escapeHtml(e.id)}">
+    <button class="btn small" data-sched-save="${escapeHtml(e.id)}">${t("shiftmgmt.sched_save")}</button>
+  </div>` : "";
   return `<div class="staff-mgmt-card">
-    <div class="top">
-      <div>
-        <div class="nm">${name} <span class="badge-active">${escapeHtml(badge)}</span></div>
-        <div class="meta">${escapeHtml(t("cycle.range", { start: startIso, end: endIso }))} · ${escapeHtml(t("cycle.length_days", { n: days }))} · ${escapeHtml(t("cycle.assignments", { n: c.assignmentCount || 0 }))}</div>
-        <div class="meta" style="font-size:11px; opacity:0.6;">ID: ${escapeHtml(c.id)}</div>
-      </div>
+    <div class="top"><div>
+      <div class="nm">${categoryIcon_(e.category)} ${escapeHtml(nm)}</div>
+      <div class="meta">${escapeHtml(categoryLabel_(e.category))}</div>
+    </div></div>
+    <div class="actions" style="align-items:center;">
+      <select data-shift-now="${escapeHtml(e.id)}">${shiftOpts}</select>
+      <button class="btn ghost small" data-sched-open="${escapeHtml(e.id)}">📅 ${t("shiftmgmt.sched_btn")}</button>
     </div>
-    ${isAdmin ? `<div class="actions">
-      ${isCurrent ? `<button class="btn ghost" data-cycle-end="${escapeHtml(c.id)}" data-cycle-name="${name}">${t("cycle.end")}</button>` : ""}
-    </div>` : ""}
+    ${pendBadges}
+    ${schedForm}
   </div>`;
 }
 
-async function createCycleSubmit() {
-  const name = document.getElementById("cycle-new-name").value.trim();
-  const startDate = document.getElementById("cycle-new-start").value;
-  const endDate = document.getElementById("cycle-new-end").value;
-  if (!startDate || !endDate) { showToast(t("toast.action_failed", { msg: "start/end required" })); return; }
-  if (startDate > endDate) { showToast(t("toast.from_after_to")); return; }
+async function changeShiftNow(empId, newShift) {
+  if (["M","A","N"].indexOf(newShift) < 0) return;
   try {
-    const r = await apiPost("createShiftCycle", { name, startDate, endDate });
-    invalidateCache();
-    if (r && r.ok && r.data) {
-      showToast(t("toast.cycle_created"));
-      cycleNewOpen = false;
-      await loadCycles_();
-    } else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+    const r = await apiPost("updateStaff", { id: empId, defaultShift: newShift });
+    invalidateCache("getShiftBoard"); invalidateCache("searchStaff"); invalidateCache("getBreaks"); invalidateCache("getVacationOverview"); invalidateCache("getMyView");
+    if (r && r.ok) { showToast(t("shiftmgmt.changed")); await loadShiftBoard_(); }
+    else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
 }
 
-async function endCycle(cycleId, name) {
-  if (!confirm(t("cycle.confirm_end", { name: name || cycleId }))) return;
+async function submitScheduleShift(empId) {
+  const shiftSel = document.querySelector('[data-sched-shift="' + empId + '"]');
+  const dateEl = document.querySelector('[data-sched-date="' + empId + '"]');
+  const toShift = shiftSel ? shiftSel.value : "";
+  const effectiveDate = dateEl ? dateEl.value : "";
+  if (!effectiveDate) { showToast(t("shiftmgmt.need_date"), 2500); return; }
   try {
-    const r = await apiPost("endShiftCycle", { cycleId, endDate: todayIso() });
-    invalidateCache();
-    if (r && r.ok) { showToast(t("toast.cycle_ended")); await loadCycles_(); }
+    const r = await apiPost("scheduleShiftChange", { employeeId: empId, toShift: toShift, effectiveDate: effectiveDate });
+    invalidateCache("getShiftBoard");
+    if (r && r.ok) { showToast(t("shiftmgmt.scheduled")); shiftSchedFor = null; await loadShiftBoard_(); }
+    else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
+  } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
+}
+
+async function cancelScheduledShift(id) {
+  try {
+    const r = await apiPost("cancelShiftChange", { id: id });
+    invalidateCache("getShiftBoard");
+    if (r && r.ok) { showToast(t("shiftmgmt.cancelled")); await loadShiftBoard_(); }
     else showToast(t("toast.action_failed", { msg: (r && r.error && (LANG === "ko" ? r.error.message_ko : r.error.message_en)) || "?" }));
   } catch (err) { showToast(t("toast.action_failed", { msg: err.message || err })); }
 }
@@ -2211,7 +2368,7 @@ async function boot() {
         const vv = rawMap[id] || {};
         nameMap[id] = (LANG === "ko" && vv.ko) ? vv.ko : (vv.en || id);
       });
-      myData = { anchor: v.anchor, dayStates: v.dayStates, breaksData: v.breaks || null, nameMap };
+      myData = { anchor: v.anchor, dayStates: v.dayStates, breaksData: v.breaks || null, nameMap, myRequests: v.myRequests || [] };
       myAnchor = v.anchor || myAnchor;
       myDataFetchedAt = Date.now();  // VERIFY-1
     }
@@ -2259,8 +2416,8 @@ window.addEventListener("pagehide", function() {
 // P2-5: boot 후 백그라운드 prefetch — 자주 진입하는 화면만 가볍게
 function schedulePrefetch_() {
   setTimeout(() => {
-    // listShiftCycles — Shift Cycle 진입 즉시 캐시 hit
-    apiGetCached("listShiftCycles").catch(() => {});
+    // getShiftBoard — 시프트 관리 진입 즉시 캐시 hit (admin 전용 엔드포인트)
+    if (bootData && bootData.user && bootData.user.isAdmin) apiGetCached("getShiftBoard").catch(() => {});
   }, 400);  // 홈 렌더 완료 후 400ms
 }
 
@@ -2296,8 +2453,8 @@ async function manualRefresh() {
       invalidateCache("searchStaff");
       await loadStaffList_();
     } else if (currentScreen === SCREEN_CYCLE) {
-      invalidateCache("listShiftCycles");
-      await loadCycles_();
+      invalidateCache("getShiftBoard");
+      await loadShiftBoard_();
     } else if (currentScreen === SCREEN_VACATION) {
       // §12-B 롤백: REDESIGN-1 loadVacationOverview_ 제거. 화면 다시 진입으로 단순화.
       await openVacationRange();
@@ -2331,8 +2488,8 @@ function bindEvents() {
       }
       else if (currentScreen === SCREEN_BREAKS) { currentScreen = SCREEN_HOME; breaksData = null; }
       else if (currentScreen === SCREEN_STAFF) { currentScreen = SCREEN_HOME; staffListData = null; staffEditingId = null; staffAddOpen = false; }
-      else if (currentScreen === SCREEN_CYCLE) { currentScreen = SCREEN_HOME; cycleData = null; cycleNewOpen = false; cycleEditingId = null; }
-      else if (currentScreen === SCREEN_VACATION) { currentScreen = SCREEN_HOME; vacationCandidates = []; vacationEmpId = ""; }
+      else if (currentScreen === SCREEN_CYCLE) { currentScreen = SCREEN_HOME; shiftBoard = null; shiftSchedFor = null; shiftSearchQ = ""; }
+      else if (currentScreen === SCREEN_VACATION) { currentScreen = SCREEN_HOME; vacationCheckDate = null; }
       else if (currentScreen === SCREEN_MY) {
         // viewer는 뒤로 가도 화면 5 그대로. admin은 홈으로.
         if (bootData && bootData.user && bootData.user.isAdmin) { currentScreen = SCREEN_HOME; myData = null; }
@@ -2403,14 +2560,27 @@ function bindEvents() {
       const restoreBtn = e.target.closest("[data-staff-restore]");
       if (restoreBtn) { restoreStaff(restoreBtn.dataset.staffRestore); return; }
 
-      // M-4 — Shift Cycle
-      if (e.target.id === "cycle-add-toggle") { cycleNewOpen = !cycleNewOpen; render(); return; }
-      if (e.target.id === "cycle-new-save") { createCycleSubmit(); return; }
-      const cycleEndBtn = e.target.closest("[data-cycle-end]");
-      if (cycleEndBtn) { endCycle(cycleEndBtn.dataset.cycleEnd, cycleEndBtn.dataset.cycleName); return; }
+      // 시프트 관리 — 시프트 탭 / 예약 폼 토글 / 예약 저장 / 예약 취소
+      const shiftbBtn = e.target.closest("[data-shiftb]");
+      if (shiftbBtn) { shiftBoardShift = shiftbBtn.dataset.shiftb; shiftSchedFor = null; render(); return; }
+      const schedOpenBtn = e.target.closest("[data-sched-open]");
+      if (schedOpenBtn) { shiftSchedFor = (shiftSchedFor === schedOpenBtn.dataset.schedOpen) ? null : schedOpenBtn.dataset.schedOpen; render(); return; }
+      const schedSaveBtn = e.target.closest("[data-sched-save]");
+      if (schedSaveBtn) { submitScheduleShift(schedSaveBtn.dataset.schedSave); return; }
+      const schedCancelBtn = e.target.closest("[data-sched-cancel]");
+      if (schedCancelBtn) { cancelScheduledShift(schedCancelBtn.dataset.schedCancel); return; }
 
-      // REQ-5b — Vacation Range 화면 (§12-B 롤백 후 단순 폼만 남음)
-      if (e.target.id === "vac-range-apply") { submitVacationRange(); return; }
+      // 휴가 확인 — 시프트 탭 / 4주 네비 / 날짜 셀 (보기 전용)
+      const vacShiftBtn = e.target.closest("[data-vac-shift]");
+      if (vacShiftBtn) { vacationCheckShift = vacShiftBtn.dataset.vacShift; render(); return; }
+      const vacNavBtn = e.target.closest("[data-vac-nav]");
+      if (vacNavBtn) { moveVacationCheck(parseInt(vacNavBtn.dataset.vacNav, 10)); return; }
+      const vacDateBtn = e.target.closest("[data-vac-date]");
+      if (vacDateBtn) { vacationCheckDate = (vacationCheckDate === vacDateBtn.dataset.vacDate) ? null : vacDateBtn.dataset.vacDate; render(); return; }
+      // 직원 신청 — 제출 / 취소
+      if (e.target.id === "req-submit") { submitRequest(); return; }
+      const reqCancelBtn = e.target.closest("[data-req-cancel]");
+      if (reqCancelBtn) { cancelRequest(reqCancelBtn.dataset.reqCancel); return; }
     });
     mainEl.dataset.bound = "1";
   }
@@ -2424,13 +2594,18 @@ function bindEvents() {
         if (window._staffSearchTid) clearTimeout(window._staffSearchTid);
         window._staffSearchTid = setTimeout(() => loadStaffList_(), 300);
       }
+      if (e.target.id === "shift-search") {
+        shiftSearchQ = e.target.value;
+        render();
+        const el = document.getElementById("shift-search");
+        if (el) { el.focus(); const v = el.value; el.value = ""; el.value = v; }
+      }
     });
     mainEl2.addEventListener("change", (e) => {
       if (e.target.id === "staff-filter") { staffFilter = e.target.value; render(); }
-      // REQ-5b: Vacation Range 화면 입력 보존
-      if (e.target.id === "vac-emp-select") { vacationEmpId = e.target.value; return; }
-      if (e.target.id === "vac-range-from") { vacationFrom = e.target.value; return; }
-      if (e.target.id === "vac-range-to") { vacationTo = e.target.value; return; }
+      const shiftNowSel = e.target.closest("[data-shift-now]");
+      if (shiftNowSel) { changeShiftNow(shiftNowSel.dataset.shiftNow, e.target.value); return; }
+      if (e.target.id === "req-type") { reqType = e.target.value; render(); return; }
     });
     mainEl2.dataset.bound2 = "1";
   }
