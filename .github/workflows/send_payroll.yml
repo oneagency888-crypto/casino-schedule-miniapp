@@ -3,8 +3,15 @@ name: 급여 명세 발송
 on:
   workflow_dispatch:
     inputs:
+      profile:
+        description: '발송 대상'
+        type: choice
+        options:
+          - employee
+          - supervisor
+        default: employee
       tab_name:
-        description: '시트 탭 이름 (예: 5/11-5/24)'
+        description: '시트 탭 이름 (직원 예: 5/11-5/24 / 슈퍼바이저 예: May)'
         required: true
       test_mode:
         description: '테스트 모드 (나에게만 발송)'
@@ -35,11 +42,12 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GOOGLE_CREDENTIALS_PATH: credentials/google-service-account.json
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SUPERVISOR_SPREADSHEET_ID: ${{ secrets.SUPERVISOR_SPREADSHEET_ID }}
           SHEET_TAB_NAME: ${{ github.event.inputs.tab_name }}
           TEST_CHAT_ID: ${{ secrets.TEST_CHAT_ID }}
         run: |
           if [ "${{ github.event.inputs.test_mode }}" = "true" ]; then
-            python scripts/send_payroll.py --test
+            python scripts/send_payroll.py "${{ github.event.inputs.profile }}" --test
           else
-            python scripts/send_payroll.py
+            python scripts/send_payroll.py "${{ github.event.inputs.profile }}"
           fi

@@ -25,25 +25,7 @@ def format_payroll_message(employee, period):
         lines.append(" · ".join(info_parts))
     lines.append("")
 
-    items = []
-    if e["night_100"]:
-        items.append(("야간수당", e["night_100"]))
-    if e["tip"]:
-        items.append(("팁", e["tip"]))
-    if e["table_bonus"]:
-        items.append(("테이블보너스", e["table_bonus"]))
-    if e["flight_ticket"]:
-        items.append(("항공권", e["flight_ticket"]))
-    if e["deduction_visa"]:
-        items.append(("비자비용 차감", -abs(e["deduction_visa"])))
-    if e["deduction_table"]:
-        items.append(("테이블 차감", -abs(e["deduction_table"])))
-    if e["electric_deduction"]:
-        items.append(("전기세 차감", -abs(e["electric_deduction"])))
-    if e["remarks"]:
-        items.append(("선불금 차감", -abs(e["remarks"])))
-
-    for label, amount in items:
+    for label, amount in e["items"]:
         lines.append(f"  {label}  {_fmt(amount)}")
 
     lines.append("─────────────────────")
