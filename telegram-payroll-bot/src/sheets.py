@@ -26,22 +26,41 @@ def _get_cell(row, idx):
     return ""
 
 
-def _find_col_by_headers(all_values, keywords, header_rows=(3, 4)):
-    """Find column index by combined header text across header_rows. Case-insensitive exact match."""
-    keyword_set = {k.strip().lower() for k in keywords}
+def _normalize(text):
+    """Collapse all whitespace (spaces, newlines, tabs) to single space, lowercase."""
+    return " ".join(str(text).split()).lower()
+
+
+def _looks_numeric(text):
+    """True if text looks like a pure number/rate (e.g. '16.66666667', '$100', '2,500.00')."""
+    cleaned = text.replace(",", "").replace("$", "").replace("₱", "").replace(".", "").replace("-", "").strip()
+    return bool(cleaned) and cleaned.isdigit()
+
+
+def _find_col_by_headers(all_values, keywords, header_rows=(2, 3, 4, 5)):
+    """Find column by header text across multiple rows. Normalized (whitespace/case), numeric-only cells skipped."""
+    keyword_set = {_normalize(k) for k in keywords}
     max_len = 0
     for r in header_rows:
         if r < len(all_values):
             max_len = max(max_len, len(all_values[r]))
+    # Pass 1: exact match on single non-numeric cell
+    for col_idx in range(max_len):
+        for row_idx in header_rows:
+            if row_idx < len(all_values) and col_idx < len(all_values[row_idx]):
+                cell = _normalize(all_values[row_idx][col_idx])
+                if cell and not _looks_numeric(cell) and cell in keyword_set:
+                    return col_idx
+    # Pass 2: exact match on combined text (multi-row headers), skipping numeric cells
     for col_idx in range(max_len):
         parts = []
         for row_idx in header_rows:
             if row_idx < len(all_values) and col_idx < len(all_values[row_idx]):
-                cell = str(all_values[row_idx][col_idx]).strip()
-                if cell:
+                cell = _normalize(all_values[row_idx][col_idx])
+                if cell and not _looks_numeric(cell):
                     parts.append(cell)
-        combined = " ".join(parts).strip().lower()
-        if combined in keyword_set:
+        combined = " ".join(parts).strip()
+        if combined and combined in keyword_set:
             return col_idx
     return None
 
@@ -54,6 +73,18 @@ SUPERVISOR_ITEM_HEADERS = {
     "전기세 차감": ["Electric Deduction"],
     "선불금 차감": ["Remarks"],
 }
+
+
+def _col_letter(idx):
+    """Convert 0-based column index to letter (A, B, ..., AA, AB, ...)."""
+    letters = ""
+    n = idx
+    while True:
+        letters = chr(ord("A") + (n % 26)) + letters
+        n = n // 26 - 1
+        if n < 0:
+            break
+    return letters
 
 
 def _detect_supervisor_columns(all_values, profile):
@@ -85,6 +116,13 @@ def _detect_supervisor_columns(all_values, profile):
                 col = detected
         new_items.append((label, col, sign))
     p["items"] = new_items
+
+    print("[감지된 컬럼]")
+    print(f"  WORKING(hours_end): {p['hours_end']} ({_col_letter(p['hours_end'])})")
+    print(f"  usdt:    {p['usdt_col']} ({_col_letter(p['usdt_col'])})")
+    print(f"  chat_id: {p['chat_id_col']} ({_col_letter(p['chat_id_col'])})")
+    for label, col, sign in p["items"]:
+        print(f"  {label}: {col} ({_col_letter(col)})")
 
     return p
 
