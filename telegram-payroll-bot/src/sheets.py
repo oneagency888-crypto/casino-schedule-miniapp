@@ -26,6 +26,69 @@ def _get_cell(row, idx):
     return ""
 
 
+def _find_col_by_headers(all_values, keywords, header_rows=(3, 4)):
+    """Find column index by combined header text across header_rows. Case-insensitive exact match."""
+    keyword_set = {k.strip().lower() for k in keywords}
+    max_len = 0
+    for r in header_rows:
+        if r < len(all_values):
+            max_len = max(max_len, len(all_values[r]))
+    for col_idx in range(max_len):
+        parts = []
+        for row_idx in header_rows:
+            if row_idx < len(all_values) and col_idx < len(all_values[row_idx]):
+                cell = str(all_values[row_idx][col_idx]).strip()
+                if cell:
+                    parts.append(cell)
+        combined = " ".join(parts).strip().lower()
+        if combined in keyword_set:
+            return col_idx
+    return None
+
+
+SUPERVISOR_ITEM_HEADERS = {
+    "야간수당": ["$100 Night", "Night"],
+    "보조금": ["Subsidy"],
+    "항공권": ["Flight Ticket"],
+    "공제": ["Deduction"],
+    "전기세 차감": ["Electric Deduction"],
+    "선불금 차감": ["Remarks"],
+}
+
+
+def _detect_supervisor_columns(all_values, profile):
+    """Detect actual column positions from the sheet header. Adapts to month day-count differences."""
+    p = dict(profile)
+    p["items"] = list(profile["items"])
+
+    def find(keywords, fallback):
+        idx = _find_col_by_headers(all_values, keywords)
+        return idx if idx is not None else fallback
+
+    p["name_col"] = find(["Name", "Full Name"], p["name_col"])
+    p["nick_name_col"] = find(["Nick Name", "Screen name"], p["nick_name_col"])
+    p["unit_col"] = find(["Unit"], p["unit_col"])
+    p["shift_col"] = find(["Shift"], p["shift_col"])
+    p["chat_id_col"] = find(["chat_id", "id_chat"], p["chat_id_col"])
+    p["usdt_col"] = find(["USDT Total payment", "Total payment", "USDT"], p["usdt_col"])
+
+    working_col = _find_col_by_headers(all_values, ["WORKING"])
+    if working_col is not None:
+        p["hours_end"] = working_col - 1
+
+    new_items = []
+    for label, col, sign in p["items"]:
+        keywords = SUPERVISOR_ITEM_HEADERS.get(label)
+        if keywords:
+            detected = _find_col_by_headers(all_values, keywords)
+            if detected is not None:
+                col = detected
+        new_items.append((label, col, sign))
+    p["items"] = new_items
+
+    return p
+
+
 def get_worksheet(spreadsheet_id, tab_name=None):
     creds = Credentials.from_service_account_file(str(GOOGLE_CREDENTIALS_PATH), scopes=SCOPES)
     client = gspread.authorize(creds)
@@ -44,6 +107,9 @@ def read_payroll_data(profile, tab_name=None):
     ws = get_worksheet(p["spreadsheet_id"], tab_name)
     all_values = ws.get_all_values()
     period = ws.title
+
+    if profile == "supervisor":
+        p = _detect_supervisor_columns(all_values, p)
 
     employees = []
     for row_idx in range(DATA_START_ROW - 1, len(all_values)):
